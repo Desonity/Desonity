@@ -1,23 +1,26 @@
 using System;
 using System.Collections;
+using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
+using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace Desonity
 {
     public class Route
     {
-        public static string ROUTE = "https://bitclout.com/api/v0";
-        public static string getRoute()
+        public string ROUTE = "https://bitclout.com/api/v0";
+        public string getRoute()
         {
             return ROUTE;
         }
-        public static void setRoute(string newRoute)
+        public void setRoute(string newRoute)
         {
             ROUTE = newRoute;
         }
 
-        public static IEnumerator POST(string endpoint, string postData, Action<string> onComplete)
+        public async Task<string> POST(string endpoint, string postData)
         {
             var uwr = new UnityWebRequest(ROUTE + endpoint, "POST");
             byte[] jsonToSend = new System.Text.UTF8Encoding().GetBytes(postData);
@@ -25,16 +28,44 @@ namespace Desonity
             uwr.downloadHandler = (DownloadHandler)new DownloadHandlerBuffer();
             uwr.SetRequestHeader("Content-Type", "application/json");
 
-            yield return uwr.SendWebRequest();
+            await uwr.SendWebRequest();
 
+            string returnThis;
             if (uwr.result == UnityWebRequest.Result.ConnectionError)
             {
-                Debug.Log("Error while making post request to " + ROUTE + endpoint + "\n\n" + uwr.error + "\n\n" + postData);
+                var error = new Endpoints.errorMessage
+                {
+                    Error = uwr.error
+                };
+                returnThis = JsonConvert.SerializeObject(error);
             }
             else
             {
-                string JSONStr = uwr.downloadHandler.text;
-                onComplete?.Invoke(JSONStr);
+                var success = new Endpoints.successMessage
+                {
+                    Response = uwr.downloadHandler.text
+                };
+                returnThis = JsonConvert.SerializeObject(success);
+            }
+            return returnThis;
+        }
+
+        public async Task<string> signAndSubmitTxn(string txn, Identity identity)
+        {
+            string signed = await identity.getSignedTxn(txn);
+            if (signed != null && signed != "")
+            {
+                var endpointClass = new Endpoints.submitTransaction
+                {
+                    TransactionHex = signed
+                };
+                string postData = JsonConvert.SerializeObject(endpointClass);
+                string response = await POST("/submit-transaction", postData);
+                return response;
+            }
+            else
+            {
+                return null;
             }
         }
     }

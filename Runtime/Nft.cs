@@ -2,41 +2,38 @@ using System;
 using System.Collections;
 using UnityEngine;
 using Newtonsoft.Json;
+using System.Threading.Tasks;
 
 namespace Desonity
 {
     public class Nft
     {
-        string JSONStr;
+        private string ReaderPublicKeyBase58Check;
+        private Identity ReaderIdentity;
 
-        private string postHash;
-        private string readerKey;
-        private string seedHex;
-        public Nft(string ReaderPublicKeyBase58Check)
+        public Nft(Identity ReaderIdentity)
         {
-            readerKey = ReaderPublicKeyBase58Check;
+            this.ReaderIdentity = ReaderIdentity;
+            this.ReaderPublicKeyBase58Check = ReaderIdentity.getPublicKey();
         }
 
-        public Nft(string ReaderPublicKeyBase58Check, string SeedHex)
-        {
-            readerKey = ReaderPublicKeyBase58Check;
-            seedHex = SeedHex;
-        }
-
-        public IEnumerator getSingleNft(Action<string> onComplete, string PostHashHex)
+        public async Task<string> getSingleNft(string PostHashHex)
         {
             string endpoint = "/get-nft-entries-for-nft-post";
             var endpointClass = new Endpoints.getNftEntriesForNftPost
             {
                 PostHashHex = PostHashHex,
-                ReaderPublicKeyBase58Check = readerKey
+                ReaderPublicKeyBase58Check = this.ReaderPublicKeyBase58Check
             };
             string postData = JsonConvert.SerializeObject(endpointClass);
 
-            yield return Route.POST(endpoint, postData, onComplete);
+            Route route = new Route();
+            string response = await route.POST(endpoint, postData);
+            return response;
+
         }
 
-        public IEnumerator getNftsForUser(Action<string> onComplete, string UserPublicKeyBase58Check, Nullable<bool> forSale = null)
+        public async Task<string> getNftsForUser(string UserPublicKeyBase58Check, Nullable<bool> forSale = null)
         {
 
             // forSale:true  -> only nfts for sale
@@ -46,16 +43,19 @@ namespace Desonity
             string endpoint = "/get-nfts-for-user";
             var endpointClass = new Endpoints.getNftsForUser
             {
-                ReaderPublicKeyBase58Check = readerKey,
+                ReaderPublicKeyBase58Check = this.ReaderPublicKeyBase58Check,
                 UserPublicKeyBase58Check = UserPublicKeyBase58Check,
             };
             if (forSale.HasValue) { endpointClass.IsForSale = forSale; }
             string postData = JsonConvert.SerializeObject(endpointClass);
-            yield return Route.POST(endpoint, postData, onComplete);
+
+            Route route = new Route();
+            string response = await route.POST(endpoint, postData);
+            return response;
         }
-        public IEnumerator mint()
-        {
-            yield return "OK";
-        }
+        // public async Task<string> mint()
+        // {
+        //     return "OK";
+        // }
     }
 }

@@ -2,57 +2,76 @@ using System;
 using System.Collections;
 using UnityEngine;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System.Threading.Tasks;
 
 namespace Desonity
 {
     public class Profile
     {
-        private string publicKey;
-        private string seedHex;
+        private string PublicKeyBase58Check;
+        private Identity identity;
 
         public Profile(string PublicKeyBase58Check)
         {
-            publicKey = PublicKeyBase58Check;
+            this.PublicKeyBase58Check = PublicKeyBase58Check;
         }
-
-        public Profile(string PublicKeyBase58Check, string SeedHex)
+        public Profile(Identity identity)
         {
-            publicKey = PublicKeyBase58Check;
-            seedHex = SeedHex;
+            this.identity = identity;
+            this.PublicKeyBase58Check = identity.getPublicKey();
         }
 
-        public IEnumerator getProfile(Action<string> onComplete)
+        public async Task<string> getProfile(Action<string> onComplete)
         {
             string endpoint = "/get-single-profile";
             var endpointClass = new Endpoints.getSingleProfile
             {
-                PublicKeyBase58Check = publicKey
+                PublicKeyBase58Check = this.PublicKeyBase58Check
             };
             string postData = JsonConvert.SerializeObject(endpointClass);
 
-            yield return Route.POST(endpoint, postData, onComplete);
+            Route route = new Route();
+            string response = await route.POST(endpoint, postData);
+            return response;
         }
 
-        public IEnumerator getNftsForUser(Action<string> onComplete, string UserPublicKeyBase58Check = null, Nullable<bool> forSale = null)
+        public async Task<string> getNftsForUser(string UserPublicKeyBase58Check = null, Nullable<bool> forSale = null)
         {
             // forSale:true  -> only nfts for sale
             // forSale:false -> only nfts not for sale
             // forSale:null  -> all owned nfts
-            var nft = new Nft(publicKey);
-            if (UserPublicKeyBase58Check == null) { UserPublicKeyBase58Check = publicKey; }
-            yield return nft.getNftsForUser(onComplete, UserPublicKeyBase58Check, forSale);
+            var nft = new Nft(this.identity);
+            if (UserPublicKeyBase58Check == null) { UserPublicKeyBase58Check = this.PublicKeyBase58Check; }
+            string response = await nft.getNftsForUser(UserPublicKeyBase58Check, forSale);
+            return response;
         }
 
-        // public IEnumerator createPost(string body, string jsonData, Action<string> onComplete)
-        // {
-        //     string endpoint = "/submit-post";
-        //     string postData = "";
-        //     yield return Route.POST(endpoint, postData, onComplete);
-        // }
+        public async Task<string> createPost(string body, bool IsHidden = false)
+        {
+            string endpoint = "/submit-post";
+            var endpointClass = new Endpoints.submitPost
+            {
+                UpdaterPublicKeyBase58Check = this.PublicKeyBase58Check,
+                BodyObj = new Endpoints.submitPost.postBody
+                {
+                    Body = body
+                },
+                IsHidden = IsHidden
+            };
+            string postData = JsonConvert.SerializeObject(endpointClass);
+            Route route = new Route();
+            string submitPostResponse = await route.POST(endpoint, postData);
+            JToken json = JToken.Parse(submitPostResponse);
+            string TransactionHex = (string)JToken.Parse((string)json.SelectToken("Response")).SelectToken("TransactionHex");
+            string response = await route.signAndSubmitTxn(TransactionHex, identity);
+            return response;
+        }
 
         public string avatarUrl()
         {
-            return Route.getRoute() + "/get-single-profile-picture/" + publicKey + "?fallback=https://bitclout.com/assets/img/default_profile_pic.png";
+            Route route = new Route();
+            return route.getRoute() + "/get-single-profile-picture/" + this.PublicKeyBase58Check + "?fallback=https://bitclout.com/assets/img/default_profile_pic.png";
         }
     }
 }
