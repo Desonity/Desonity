@@ -11,11 +11,8 @@ namespace Desonity
     {
         private string PublicKeyBase58Check;
         private Identity identity;
+        public string Username;
 
-        public Profile(string PublicKeyBase58Check)
-        {
-            this.PublicKeyBase58Check = PublicKeyBase58Check;
-        }
         public Profile(Identity identity)
         {
             this.identity = identity;
@@ -49,6 +46,10 @@ namespace Desonity
 
         public async Task<string> createPost(string body, bool IsHidden = false)
         {
+            if (this.identity.getScope() == Desonity.IdentityScopes.READ_ONLY)
+            {
+                throw new Exception("Cannot create post with scope " + this.identity.getScope());
+            }
             string endpoint = "/submit-post";
             var endpointClass = new Endpoints.submitPost
             {

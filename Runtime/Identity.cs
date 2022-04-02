@@ -19,6 +19,7 @@ namespace Desonity
         public static string READ_WRITE_BACKEND_SEED = "READ_WRITE_BACKEND_SEED";
 
         // Signing and submitting of transactions using Identity window from the flask backend
+        // UNSUPPORTED AS ON NOW, SEEMS COMPLICATED~
         public static string READ_WRITE_IDENTITY = "READ_WRITE_IDENTITY";
     }
     public class Identity
@@ -32,36 +33,38 @@ namespace Desonity
         public Identity(string PublicKeyBase58Check)
         {
             this.PublicKeyBase58Check = PublicKeyBase58Check;
+            // Scope is READ_ONLY by default if only Public Key is passed
             this.scope = IdentityScopes.READ_ONLY;
 
         }
-        public Identity(string appName, string backendUrl, string scope, string PublicKeyBase58Check = null, string seedHex = null)
+
+        public Identity(string appName, string backendUrl)
+        {
+            this.appName = UnityWebRequest.EscapeURL(appName);
+            this.backendURL = backendUrl;
+            this.scope = IdentityScopes.READ_ONLY;
+        }
+
+        public Identity(string appName, string backendUrl, string PublicKeyBase58Check, string seedHex)
         {
             this.appName = UnityWebRequest.EscapeURL(appName);
             this.backendURL = backendUrl;
             this.PublicKeyBase58Check = PublicKeyBase58Check;
-            this.scope = scope;
             this.seedHex = seedHex;
-            if (scope == IdentityScopes.READ_WRITE_LOCAL_SEED && seedHex == null)
-            {
-                // If you dont pass seed hex while using READ_WRIE_LOCAL_SEED scope
-                throw new Exception("SeedHex is required for scope: " + IdentityScopes.READ_WRITE_LOCAL_SEED);
-            }
-            if (seedHex != null)
-            {
-                // If you pass a seedHex, READ_WRITE_LOCAL_SEED will always be used
-                this.scope = IdentityScopes.READ_WRITE_LOCAL_SEED;
-            }
-            if (PublicKeyBase58Check == null && seedHex == null)
-            {
-                scope = IdentityScopes.READ_ONLY;
-            }
+            // Scope is READ_WRITE_LOCAL_SEED by default is you pass public key and seed hex
+            this.scope = IdentityScopes.READ_WRITE_LOCAL_SEED;
+        }
+
+        public string getScope()
+        {
+            return this.scope;
         }
 
         private async Task<string> checkLoggedIn(string keyUrl, string uuid)
         {
             string postData = "{\"uuid\":\"" + uuid + "\"}";
-            int remainingTries = 20;
+            int remainingTries = 60;
+            int cooldownSeconds = 2;
             string returnedKey = null;
             while (remainingTries > 0)
             {
@@ -83,11 +86,12 @@ namespace Desonity
                     if (uwr.downloadHandler.text == "" || uwr.downloadHandler.text == null)
                     {
                         returnedKey = null;
-                        await new WaitForSeconds(3);
+                        await new WaitForSeconds(cooldownSeconds);
                     }
                     else
                     {
                         returnedKey = uwr.downloadHandler.text;
+                        break;
                     }
                 }
                 remainingTries--;
@@ -105,12 +109,20 @@ namespace Desonity
 
         public async Task<string> Login()
         {
+            if (this.backendURL == null)
+            {
+                throw new Exception("Backend URL was not passed");
+            }
+            if (this.appName == null)
+            {
+                throw new Exception("App Name was not passed");
+            }
             Guid myuuid = Guid.NewGuid();
             string myuuidAsString = myuuid.ToString();
 
             Application.OpenURL(backendURL + "/login/" + myuuidAsString + "?appname=" + appName);
 
-            string loggedInKey = await checkLoggedIn(keyUrl: backendURL + "/getKey", uuid: myuuidAsString);
+            string loggedInKey = await checkLoggedIn(keyUrl: (backendURL + "/getKey"), uuid: myuuidAsString);
             this.PublicKeyBase58Check = loggedInKey;
             return loggedInKey;
         }
