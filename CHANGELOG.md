@@ -2,7 +2,20 @@
 
 All notable changes for Desonity package will be documented in this file
 
-## 2.0.0 - 2033-03-31
+## 2.0.1 - 2022-04-03
+
+### Changed
+
+- Reaplaced string json responses of POST methods with a standard Response object containing `JObject`, `JArray` and status code for the response. The response data is now easily accessible using `Newtonsoft.Json`.
+- Replaced all `PublicKeyBase58Check`s with an identity object
+
+### Added
+
+- Some commonly used variables to `Profile` class, so users dont have to use the JObject everytime.
+- profile and nft examples.
+- *Identities everywhere*
+
+## 2.0.0 - 2022-03-31
 
 ### Changed
 

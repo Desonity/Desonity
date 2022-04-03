@@ -5,9 +5,16 @@ using UnityEngine;
 using UnityEngine.Networking;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Desonity
 {
+    public class Response
+    {
+        public JObject json { get; set; }
+        public JArray array { get; set; }
+        public long statusCode { get; set; }
+    }
     public class Route
     {
         public string ROUTE = "https://bitclout.com/api/v0";
@@ -20,7 +27,7 @@ namespace Desonity
             ROUTE = newRoute;
         }
 
-        public async Task<string> POST(string endpoint, string postData)
+        public async Task<Response> POST(string endpoint, string postData)
         {
             var uwr = new UnityWebRequest(ROUTE + endpoint, "POST");
             byte[] jsonToSend = new System.Text.UTF8Encoding().GetBytes(postData);
@@ -30,27 +37,27 @@ namespace Desonity
 
             await uwr.SendWebRequest();
 
-            string returnThis;
             if (uwr.result == UnityWebRequest.Result.ConnectionError)
             {
-                var error = new Endpoints.errorMessage
+                var returnThis = new Response
                 {
-                    Error = uwr.error
+                    json = JObject.Parse("{\"error\":\"ConnectionError\"}"),
+                    statusCode = uwr.responseCode
                 };
-                returnThis = JsonConvert.SerializeObject(error);
+                return returnThis;
             }
             else
             {
-                var success = new Endpoints.successMessage
+                var returnThis = new Response
                 {
-                    Response = uwr.downloadHandler.text
+                    json = JObject.Parse(uwr.downloadHandler.text),
+                    statusCode = uwr.responseCode
                 };
-                returnThis = JsonConvert.SerializeObject(success);
+                return returnThis;
             }
-            return returnThis;
         }
 
-        public async Task<string> signAndSubmitTxn(string txn, Identity identity)
+        public async Task<Response> signAndSubmitTxn(string txn, Identity identity)
         {
             string signed = await identity.getSignedTxn(txn);
             if (signed != null && signed != "")
@@ -60,12 +67,16 @@ namespace Desonity
                     TransactionHex = signed
                 };
                 string postData = JsonConvert.SerializeObject(endpointClass);
-                string response = await POST("/submit-transaction", postData);
+                Response response = await POST("/submit-transaction", postData);
                 return response;
             }
             else
             {
-                return null;
+                return new Response
+                {
+                    json = JObject.Parse("{\"error\":\"No signed transaction\"}"),
+                    statusCode = 0
+                };
             }
         }
     }

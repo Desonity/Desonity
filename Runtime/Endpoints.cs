@@ -12,18 +12,6 @@ namespace Desonity.Endpoints
     }
 
     [Serializable]
-    public class errorMessage
-    {
-        public string Error { get; set; }
-    }
-
-    [Serializable]
-    public class successMessage
-    {
-        public string Response { get; set; }
-    }
-
-    [Serializable]
     public class getSingleProfile
     {
         public bool NoErrorOnMissing = false;

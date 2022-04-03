@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using UnityEngine;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
 
 namespace Desonity
@@ -17,7 +18,7 @@ namespace Desonity
             this.ReaderPublicKeyBase58Check = ReaderIdentity.getPublicKey();
         }
 
-        public async Task<string> getSingleNft(string PostHashHex)
+        public async Task<Response> getSingleNft(string PostHashHex)
         {
             string endpoint = "/get-nft-entries-for-nft-post";
             var endpointClass = new Endpoints.getNftEntriesForNftPost
@@ -28,12 +29,24 @@ namespace Desonity
             string postData = JsonConvert.SerializeObject(endpointClass);
 
             Route route = new Route();
-            string response = await route.POST(endpoint, postData);
-            return response;
+            Response response = await route.POST(endpoint, postData);
+            if (response.statusCode == 200)
+            {
+                JArray NFTarray = JArray.Parse(response.json["NFTEntryResponses"].ToString());
+                return new Response
+                {
+                    array = NFTarray,
+                    statusCode = response.statusCode
+                };
+            }
+            else
+            {
+                return response;
+            }
 
         }
 
-        public async Task<string> getNftsForUser(string UserPublicKeyBase58Check, Nullable<bool> forSale = null)
+        public async Task<Response> getNftsForUser(Identity identity, Nullable<bool> forSale = null)
         {
 
             // forSale:true  -> only nfts for sale
@@ -44,15 +57,28 @@ namespace Desonity
             var endpointClass = new Endpoints.getNftsForUser
             {
                 ReaderPublicKeyBase58Check = this.ReaderPublicKeyBase58Check,
-                UserPublicKeyBase58Check = UserPublicKeyBase58Check,
+                UserPublicKeyBase58Check = identity.getPublicKey(),
             };
             if (forSale.HasValue) { endpointClass.IsForSale = forSale; }
             string postData = JsonConvert.SerializeObject(endpointClass);
 
             Route route = new Route();
-            string response = await route.POST(endpoint, postData);
-            return response;
+            Response response = await route.POST(endpoint, postData);
+            if (response.statusCode == 200)
+            {
+                JObject nftJson = JObject.Parse(response.json["NFTsMap"].ToString());
+                return new Response
+                {
+                    json = nftJson,
+                    statusCode = response.statusCode
+                };
+            }
+            else
+            {
+                return response;
+            }
         }
+
         // public async Task<string> mint()
         // {
         //     return "OK";

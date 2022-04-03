@@ -9,42 +9,64 @@ namespace Desonity
 {
     public class Profile
     {
-        private string PublicKeyBase58Check;
         private Identity identity;
+        public JObject json;
+        public string PublicKeyBase58Check;
         public string Username;
+        public string Description;
+        public bool IsVerified;
+        public string AvatarUrl;
+        public bool IsBlacklisted;
+        public bool IsGraylisted;
+        public JObject CoinEntryJson;
+        public JObject DAOCoinEntryJson;
+        public long CoinPriceDeSoNanos;
+
 
         public Profile(Identity identity)
         {
             this.identity = identity;
-            this.PublicKeyBase58Check = identity.getPublicKey();
         }
 
-        public async Task<string> getProfile(Action<string> onComplete)
+        public async Task<Response> getProfile()
         {
             string endpoint = "/get-single-profile";
             var endpointClass = new Endpoints.getSingleProfile
             {
-                PublicKeyBase58Check = this.PublicKeyBase58Check
+                PublicKeyBase58Check = this.identity.getPublicKey()
             };
             string postData = JsonConvert.SerializeObject(endpointClass);
 
             Route route = new Route();
-            string response = await route.POST(endpoint, postData);
+            Response response = await route.POST(endpoint, postData);
+            this.json = response.json;
+            this.Username = (string)response.json["Profile"]["Username"];
+            this.Description = (string)response.json["Profile"]["Description"];
+            this.IsVerified = (bool)response.json["Profile"]["IsVerified"];
+            this.AvatarUrl = route.getRoute() + "/get-single-profile-picture/" + this.PublicKeyBase58Check + "?fallback=https://bitclout.com/assets/img/default_profile_pic.png";
+            this.IsBlacklisted = (bool)response.json["IsBlacklisted"];
+            this.IsGraylisted = (bool)response.json["IsGraylisted"];
+            this.CoinEntryJson = (JObject)response.json["Profile"]["CoinEntry"];
+            this.DAOCoinEntryJson = (JObject)response.json["Profile"]["DAOCoinEntry"];
+            this.CoinPriceDeSoNanos = (long)response.json["Profile"]["CoinPriceDeSoNanos"];
             return response;
         }
 
-        public async Task<string> getNftsForUser(string UserPublicKeyBase58Check = null, Nullable<bool> forSale = null)
+        public async Task<Response> getNftsForUser(Identity identity = null, Nullable<bool> forSale = null)
         {
             // forSale:true  -> only nfts for sale
             // forSale:false -> only nfts not for sale
             // forSale:null  -> all owned nfts
             var nft = new Nft(this.identity);
-            if (UserPublicKeyBase58Check == null) { UserPublicKeyBase58Check = this.PublicKeyBase58Check; }
-            string response = await nft.getNftsForUser(UserPublicKeyBase58Check, forSale);
+            if (identity == null)
+            {
+                identity = this.identity;
+            }
+            Response response = await nft.getNftsForUser(identity, forSale);
             return response;
         }
 
-        public async Task<string> createPost(string body, bool IsHidden = false)
+        public async Task<Response> createPost(string body, bool IsHidden = false)
         {
             if (this.identity.getScope() == Desonity.IdentityScopes.READ_ONLY)
             {
@@ -62,17 +84,25 @@ namespace Desonity
             };
             string postData = JsonConvert.SerializeObject(endpointClass);
             Route route = new Route();
-            string submitPostResponse = await route.POST(endpoint, postData);
-            JToken json = JToken.Parse(submitPostResponse);
-            string TransactionHex = (string)JToken.Parse((string)json.SelectToken("Response")).SelectToken("TransactionHex");
-            string response = await route.signAndSubmitTxn(TransactionHex, identity);
-            return response;
-        }
-
-        public string avatarUrl()
-        {
-            Route route = new Route();
-            return route.getRoute() + "/get-single-profile-picture/" + this.PublicKeyBase58Check + "?fallback=https://bitclout.com/assets/img/default_profile_pic.png";
+            Response submitPostResponse = await route.POST(endpoint, postData);
+            if (submitPostResponse.statusCode == 200)
+            {
+                JObject json = submitPostResponse.json;
+                string TransactionHex = (string)JObject.Parse((string)json.SelectToken("Response")).SelectToken("TransactionHex");
+                Response response = await route.signAndSubmitTxn(TransactionHex, identity);
+                if (response.statusCode == 200)
+                {
+                    return response;
+                }
+                else
+                {
+                    throw new Exception("Error " + submitPostResponse.statusCode + " while submitting signed transaction: " + submitPostResponse.json.ToString());
+                }
+            }
+            else
+            {
+                throw new Exception("Error " + submitPostResponse.statusCode + " while creating post transaction: " + submitPostResponse.json.ToString());
+            }
         }
     }
 }

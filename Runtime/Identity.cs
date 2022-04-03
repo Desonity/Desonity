@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.Networking;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Desonity
 {
@@ -60,7 +61,7 @@ namespace Desonity
             return this.scope;
         }
 
-        private async Task<string> checkLoggedIn(string keyUrl, string uuid)
+        private async Task<Response> checkLoggedIn(string keyUrl, string uuid)
         {
             string postData = "{\"uuid\":\"" + uuid + "\"}";
             int remainingTries = 60;
@@ -97,17 +98,26 @@ namespace Desonity
                 remainingTries--;
                 Debug.Log("waiting for login (" + remainingTries + ")");
             }
-            if (remainingTries == 0 && returnedKey == null)
+            if (remainingTries == 0 && (returnedKey == null || returnedKey == ""))
             {
-                return null;
+                return new Response
+                {
+                    json = JObject.Parse("{\"error\":\"Login Timed Out\"}"),
+                    statusCode = 0
+                };
             }
             else
             {
-                return returnedKey;
+                this.PublicKeyBase58Check = returnedKey;
+                return new Response
+                {
+                    json = JObject.Parse("{\"PublicKeyBase58Check\":\"" + returnedKey + "\"}"),
+                    statusCode = 200
+                };
             }
         }
 
-        public async Task<string> Login()
+        public async Task<Response> Login()
         {
             if (this.backendURL == null)
             {
@@ -122,9 +132,8 @@ namespace Desonity
 
             Application.OpenURL(backendURL + "/login/" + myuuidAsString + "?appname=" + appName);
 
-            string loggedInKey = await checkLoggedIn(keyUrl: (backendURL + "/getKey"), uuid: myuuidAsString);
-            this.PublicKeyBase58Check = loggedInKey;
-            return loggedInKey;
+            Response response = await checkLoggedIn(keyUrl: (backendURL + "/getKey"), uuid: myuuidAsString);
+            return response;
         }
 
         public string getPublicKey()
