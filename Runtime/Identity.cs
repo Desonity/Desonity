@@ -43,6 +43,7 @@ namespace Desonity
         {
             this.appName = UnityWebRequest.EscapeURL(appName);
             this.backendURL = backendUrl;
+            // Scope is READ_ONLY by default if nothing is passed
             this.scope = IdentityScopes.READ_ONLY;
         }
 
@@ -108,7 +109,6 @@ namespace Desonity
             }
             else
             {
-                this.PublicKeyBase58Check = returnedKey;
                 return new Response
                 {
                     json = JObject.Parse("{\"PublicKeyBase58Check\":\"" + returnedKey + "\"}"),
@@ -127,12 +127,21 @@ namespace Desonity
             {
                 throw new Exception("App Name was not passed");
             }
+            if (this.scope != null && this.PublicKeyBase58Check != null && this.seedHex != null)
+            {
+                throw new Exception("Identity already initialized with scope " + this.scope);
+            }
             Guid myuuid = Guid.NewGuid();
             string myuuidAsString = myuuid.ToString();
 
             Application.OpenURL(backendURL + "/login/" + myuuidAsString + "?appname=" + appName);
 
             Response response = await checkLoggedIn(keyUrl: (backendURL + "/getKey"), uuid: myuuidAsString);
+            if (response.statusCode == 200 && response.json["PublicKeyBase58Check"] != null)
+            {
+                this.PublicKeyBase58Check = (string)response.json["PublicKeyBase58Check"];
+                this.scope = IdentityScopes.READ_ONLY;
+            }
             return response;
         }
 
@@ -185,6 +194,7 @@ namespace Desonity
             else if (this.scope == IdentityScopes.READ_WRITE_IDENTITY)
             {
                 // WPA
+                Debug.Log("This ran");
                 return null;
             }
             else

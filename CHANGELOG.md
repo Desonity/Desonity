@@ -2,7 +2,27 @@
 
 All notable changes for Desonity package will be documented in this file
 
-## 2.0.1 - 2022-04-03
+## 0.0.5 - 2022-04-04
+
+Users dont have to necessarily use the JObject anymore. Instead all API keys and values can be now accessed directly through class member variables.
+
+### Changed
+
+- `Desonity.Profile` is a static class now and can be used without instanciating a new object.
+- `Desonity.Route` is also a static class now.
+- `Profile.getProfile` now returns a `ProfileEntry` object.
+- `Profile.submitPost` and `Profile.getPost` new returns a `PostEntry` object.
+
+### Added
+
+- `Runtime/Helpers` folder to contain helper functions. `Helpers/Objects` contains Classes for DeSo API responses (You'll get what I mean after looking at the classes in Objects folder), all functions will be returning one of these classes according to use.
+
+### TODO
+
+- Add Object classes just like profile, in nft too.
+- **PLEASE WRITE [DOCUMENTATION](https://desonity.github.io/docs) FFS**.
+
+## 0.0.4 - 2022-04-03
 
 ### Changed
 
@@ -15,7 +35,7 @@ All notable changes for Desonity package will be documented in this file
 - profile and nft examples.
 - *Identities everywhere*
 
-## 2.0.0 - 2022-03-31
+## 0.0.3 - 2022-03-31
 
 ### Changed
 
@@ -33,14 +53,14 @@ All notable changes for Desonity package will be documented in this file
 - Replace current string JSON response of `Route.POST(...)` with a more easily useable Object thingy idk.
 - Add code for `READ_WRITE_IDENTITY` scope to use Identity window for signing transactions on the users side.
 
-## 1.0.2 - 2022-03-27
+## 0.0.2 - 2022-03-27
 
 ### Changed
 
 - Added Serializable Classes for each deso endpoint under `Endpoints.cs`, this will be used to create the Json string that will be posted to the backend. This will make the code more readable and easier to modify the post json.
 - Replaced UnityEngines JsonUtility with Newtonsoft.Json to Serialize endpoint classes in `Endpoint.cs`
 
-## 1.0.1 - 2022-03-25
+## 0.0.1 - 2022-03-25
 
 ### Added
 
@@ -50,7 +70,7 @@ All notable changes for Desonity package will be documented in this file
 
 - Fixed minor bug in `Profile.getNftsForUser` which did not have nullable bool as a parameter
 
-## 1.0.0 - 2022-03-24
+## 0.0.0 - 2022-03-24
 
 ### Added
 

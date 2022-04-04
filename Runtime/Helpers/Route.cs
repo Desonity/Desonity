@@ -15,19 +15,19 @@ namespace Desonity
         public JArray array { get; set; }
         public long statusCode { get; set; }
     }
-    public class Route
+    public static class Route
     {
-        public string ROUTE = "https://bitclout.com/api/v0";
-        public string getRoute()
+        public static string ROUTE = "https://bitclout.com/api/v0";
+        public static string getRoute()
         {
             return ROUTE;
         }
-        public void setRoute(string newRoute)
+        public static void setRoute(string newRoute)
         {
             ROUTE = newRoute;
         }
 
-        public async Task<Response> POST(string endpoint, string postData)
+        public static async Task<Response> POST(string endpoint, string postData)
         {
             var uwr = new UnityWebRequest(ROUTE + endpoint, "POST");
             byte[] jsonToSend = new System.Text.UTF8Encoding().GetBytes(postData);
@@ -57,7 +57,7 @@ namespace Desonity
             }
         }
 
-        public async Task<Response> signAndSubmitTxn(string txn, Identity identity)
+        public static async Task<Response> signAndSubmitTxn(string txn, Identity identity)
         {
             string signed = await identity.getSignedTxn(txn);
             if (signed != null && signed != "")
@@ -67,7 +67,7 @@ namespace Desonity
                     TransactionHex = signed
                 };
                 string postData = JsonConvert.SerializeObject(endpointClass);
-                Response response = await POST("/submit-transaction", postData);
+                Response response = await Route.POST("/submit-transaction", postData);
                 return response;
             }
             else

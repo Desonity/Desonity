@@ -4,6 +4,7 @@ using UnityEngine;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
+using Desonity.Endpoints;
 
 namespace Desonity
 {
@@ -28,8 +29,7 @@ namespace Desonity
             };
             string postData = JsonConvert.SerializeObject(endpointClass);
 
-            Route route = new Route();
-            Response response = await route.POST(endpoint, postData);
+            Response response = await Route.POST(endpoint, postData);
             if (response.statusCode == 200)
             {
                 JArray NFTarray = JArray.Parse(response.json["NFTEntryResponses"].ToString());
@@ -62,8 +62,7 @@ namespace Desonity
             if (forSale.HasValue) { endpointClass.IsForSale = forSale; }
             string postData = JsonConvert.SerializeObject(endpointClass);
 
-            Route route = new Route();
-            Response response = await route.POST(endpoint, postData);
+            Response response = await Route.POST(endpoint, postData);
             if (response.statusCode == 200)
             {
                 JObject nftJson = JObject.Parse(response.json["NFTsMap"].ToString());

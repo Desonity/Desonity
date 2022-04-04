@@ -4,99 +4,73 @@ using UnityEngine;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
+using Desonity.Endpoints;
+using Desonity.Objects;
 
 namespace Desonity
 {
     public class Profile
     {
-        private Identity identity;
-        public JObject json;
-        public string PublicKeyBase58Check;
-        public string Username;
-        public string Description;
-        public bool IsVerified;
-        public string AvatarUrl;
-        public bool IsBlacklisted;
-        public bool IsGraylisted;
-        public JObject CoinEntryJson;
-        public JObject DAOCoinEntryJson;
-        public long CoinPriceDeSoNanos;
-
-
-        public Profile(Identity identity)
-        {
-            this.identity = identity;
-        }
-
-        public async Task<Response> getProfile()
+        public static async Task<ProfileEntry> getProfile(Identity identity)
         {
             string endpoint = "/get-single-profile";
             var endpointClass = new Endpoints.getSingleProfile
             {
-                PublicKeyBase58Check = this.identity.getPublicKey()
+                PublicKeyBase58Check = identity.getPublicKey()
             };
             string postData = JsonConvert.SerializeObject(endpointClass);
 
-            Route route = new Route();
-            Response response = await route.POST(endpoint, postData);
-            this.json = response.json;
-            this.Username = (string)response.json["Profile"]["Username"];
-            this.Description = (string)response.json["Profile"]["Description"];
-            this.IsVerified = (bool)response.json["Profile"]["IsVerified"];
-            this.AvatarUrl = route.getRoute() + "/get-single-profile-picture/" + this.PublicKeyBase58Check + "?fallback=https://bitclout.com/assets/img/default_profile_pic.png";
-            this.IsBlacklisted = (bool)response.json["IsBlacklisted"];
-            this.IsGraylisted = (bool)response.json["IsGraylisted"];
-            this.CoinEntryJson = (JObject)response.json["Profile"]["CoinEntry"];
-            this.DAOCoinEntryJson = (JObject)response.json["Profile"]["DAOCoinEntry"];
-            this.CoinPriceDeSoNanos = (long)response.json["Profile"]["CoinPriceDeSoNanos"];
-            return response;
+            Response response = await Route.POST(endpoint, postData);
+
+            ProfileEntry profileEntry = JsonConvert.DeserializeObject<ProfileEntry>(response.json["Profile"].ToString());
+            profileEntry.json = (JObject)response.json["Profile"];
+            return profileEntry;
         }
 
-        public async Task<Response> getNftsForUser(Identity identity = null, Nullable<bool> forSale = null)
+        public static async Task<PostEntry> getPost(Identity identity, string postHashHex)
         {
-            // forSale:true  -> only nfts for sale
-            // forSale:false -> only nfts not for sale
-            // forSale:null  -> all owned nfts
-            var nft = new Nft(this.identity);
-            if (identity == null)
+            string endpoint = "/get-single-post";
+            var endpointClass = new Endpoints.getSinglePost
             {
-                identity = this.identity;
+                PostHashHex = postHashHex
+            };
+            string postData = JsonConvert.SerializeObject(endpointClass);
+            Response response = await Route.POST(endpoint, postData);
+            if (response.statusCode == 200)
+            {
+                PostEntry postEntry = JsonConvert.DeserializeObject<PostEntry>(response.json["PostFound"].ToString());
+                postEntry.json = (JObject)response.json["PostFound"];
+                return postEntry;
             }
-            Response response = await nft.getNftsForUser(identity, forSale);
-            return response;
+            else
+            {
+                throw new Exception("Error " + response.statusCode + " while creating getting post: " + response.json.ToString());
+            }
         }
 
-        public async Task<Response> createPost(string body, bool IsHidden = false)
+        public static async Task<PostEntry> submitPost(Identity identity, submitPost post)
         {
-            if (this.identity.getScope() == Desonity.IdentityScopes.READ_ONLY)
+            if (identity.getScope() == Desonity.IdentityScopes.READ_ONLY)
             {
-                throw new Exception("Cannot create post with scope " + this.identity.getScope());
+                throw new Exception("Cannot create post with scope " + identity.getScope());
             }
             string endpoint = "/submit-post";
-            var endpointClass = new Endpoints.submitPost
-            {
-                UpdaterPublicKeyBase58Check = this.PublicKeyBase58Check,
-                BodyObj = new Endpoints.submitPost.postBody
-                {
-                    Body = body
-                },
-                IsHidden = IsHidden
-            };
-            string postData = JsonConvert.SerializeObject(endpointClass);
-            Route route = new Route();
-            Response submitPostResponse = await route.POST(endpoint, postData);
+            string postData = JsonConvert.SerializeObject(post);
+            Response submitPostResponse = await Route.POST(endpoint, postData);
             if (submitPostResponse.statusCode == 200)
             {
                 JObject json = submitPostResponse.json;
-                string TransactionHex = (string)JObject.Parse((string)json.SelectToken("Response")).SelectToken("TransactionHex");
-                Response response = await route.signAndSubmitTxn(TransactionHex, identity);
-                if (response.statusCode == 200)
+                string TransactionHex = (string)json["TransactionHex"];
+                Response signResponse = await Route.signAndSubmitTxn(TransactionHex, identity);
+                if (signResponse.statusCode == 200)
                 {
-                    return response;
+                    PostEntry postEntry = JsonConvert.DeserializeObject<PostEntry>(signResponse.json["PostEntryResponse"].ToString());
+                    postEntry.json = (JObject)signResponse.json["PostEntryResponse"];
+                    return postEntry;
                 }
                 else
                 {
-                    throw new Exception("Error " + submitPostResponse.statusCode + " while submitting signed transaction: " + submitPostResponse.json.ToString());
+                    throw new Exception("Error " + signResponse.statusCode + " while submitting signed transaction: " + signResponse.json.ToString());
                 }
             }
             else

@@ -1,6 +1,6 @@
 {
   "name": "com.weeblet.desonity",
-  "version": "2.0.1",
+  "version": "0.0.5",
   "displayName": "Desonity",
   "description": "A Unity3D package to interact with the deso blockchain",
   "unity": "2020.3",
@@ -17,7 +17,7 @@
     "cryptocurrency"
   ],
   "author": {
-    "name": "weeblet",
-    "url": "https://bitclout.com/u/weeblet"
+    "name": "Ankush (weeblet)",
+    "url": "https://diamondapp.com/u/weeblet"
   }
 }

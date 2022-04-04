@@ -11,7 +11,7 @@ public class IdentityLogin : MonoBehaviour
 
         var identity = new Desonity.Identity(appName, backendUrl);
 
-        string loggedInKey = await identity.Login();
-        Debug.Log(loggedInKey + " has logged in");
+        await identity.Login();
+        Debug.Log(identity.getPublicKey() + " has logged in");
     }
 }

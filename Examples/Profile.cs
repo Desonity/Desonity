@@ -1,7 +1,7 @@
 using UnityEngine;
 using Desonity;
 
-public class Profile : MonoBehaviour
+public class ProfileExample : MonoBehaviour
 {
     async void Start()
     {
@@ -9,12 +9,12 @@ public class Profile : MonoBehaviour
 
         var identity = new Desonity.Identity(myPublicKey);
 
-        var profile = new Desonity.Profile(identity);
-        await profile.getProfile();
+        var profile = await Profile.getProfile(identity);
 
         Debug.Log(profile.Username);
-        Debug.Log(profile.CoinEntryJson.ToString());
-        Debug.Log(profile.json.ToString());
+        Debug.Log(profile.CoinEntry.CoinsInCirculationNanos);
+        Debug.Log(profile.DAOCoinEntry.CoinsInCirculationNanos);
+        Debug.Log(profile.json);
 
     }
 }
