@@ -2,7 +2,7 @@
 
 All notable changes for Desonity package will be documented in this file
 
-## [v0.0.6](https://github.com/desonity/desonity/releases/tag/0.0.6) - 2022-04-05
+## [v0.0.6](https://github.com/desonity/desonity/releases/tag/v0.0.6) - 2022-04-05
 
 This release contains most common functions that might be useful for integrating deso with unity games. I hope future versions will be stable from now on and no breaking changes will be done. I will keep adding more endpoints support (Feel free to make a PR if you feel like adding support for an endpoint).
 
