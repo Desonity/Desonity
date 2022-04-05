@@ -9,32 +9,12 @@ using Desonity.Objects;
 
 namespace Desonity
 {
-    public class Profile
+    public class Posts
     {
-        public static async Task<ProfileEntry> getProfile(Identity identity)
-        {
-            string endpoint = "/get-single-profile";
-            var endpointClass = new Endpoints.getSingleProfile
-            {
-                PublicKeyBase58Check = identity.getPublicKey()
-            };
-            string postData = JsonConvert.SerializeObject(endpointClass);
-
-            Response response = await Route.POST(endpoint, postData);
-
-            ProfileEntry profileEntry = JsonConvert.DeserializeObject<ProfileEntry>(response.json["Profile"].ToString());
-            profileEntry.json = (JObject)response.json["Profile"];
-            return profileEntry;
-        }
-
-        public static async Task<PostEntry> getPost(Identity identity, string postHashHex)
+        public static async Task<PostEntry> getSinglePost(GetSinglePost getSinglePost)
         {
             string endpoint = "/get-single-post";
-            var endpointClass = new Endpoints.getSinglePost
-            {
-                PostHashHex = postHashHex
-            };
-            string postData = JsonConvert.SerializeObject(endpointClass);
+            string postData = JsonConvert.SerializeObject(getSinglePost);
             Response response = await Route.POST(endpoint, postData);
             if (response.statusCode == 200)
             {
@@ -48,14 +28,14 @@ namespace Desonity
             }
         }
 
-        public static async Task<PostEntry> submitPost(Identity identity, submitPost post)
+        public static async Task<PostEntry> submitPost(Identity identity, SubmitPost submitPost)
         {
             if (identity.getScope() == Desonity.IdentityScopes.READ_ONLY)
             {
                 throw new Exception("Cannot create post with scope " + identity.getScope());
             }
             string endpoint = "/submit-post";
-            string postData = JsonConvert.SerializeObject(post);
+            string postData = JsonConvert.SerializeObject(submitPost);
             Response submitPostResponse = await Route.POST(endpoint, postData);
             if (submitPostResponse.statusCode == 200)
             {

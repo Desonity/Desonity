@@ -62,7 +62,7 @@ namespace Desonity
             string signed = await identity.getSignedTxn(txn);
             if (signed != null && signed != "")
             {
-                var endpointClass = new Endpoints.submitTransaction
+                var endpointClass = new Endpoints.SubmitTransaction
                 {
                     TransactionHex = signed
                 };

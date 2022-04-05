@@ -2,29 +2,32 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Desonity.Endpoints
 {
     [Serializable]
-    public class submitTransaction
+    public class SubmitTransaction
     {
         public string TransactionHex;
     }
 
     [Serializable]
-    public class getSingleProfile
+    public class GetSingleProfile
     {
-        public bool NoErrorOnMissing = false;
         public string PublicKeyBase58Check;
+        public string Username;
+        public bool NoErrorOnMissing = false;
     }
     [Serializable]
-    public class getSinglePost
+    public class GetSinglePost
     {
         public string PostHashHex;
     }
 
     [Serializable]
-    public class getNftEntriesForNftPost
+    public class GetNftEntriesForNftPost
     {
         public string PostHashHex;
         public string ReaderPublicKeyBase58Check;
@@ -32,7 +35,7 @@ namespace Desonity.Endpoints
     }
 
     [Serializable]
-    public class getNftsForUser
+    public class GetNftsForUser
     {
         public string ReaderPublicKeyBase58Check;
         public string UserPublicKeyBase58Check;
@@ -40,20 +43,38 @@ namespace Desonity.Endpoints
     }
 
     [Serializable]
-    public class submitPost
+    public class SubmitPost
     {
         [Serializable]
-        public class postBody
+        public class PostBody
         {
             public string Body;
             public List<string> ImageURLs;
+            public JObject PostExtraData;
 
         }
 
         public string UpdaterPublicKeyBase58Check;
         public bool IsHidden = false;
         public int MinFeeRateNanosPerKB = 1000;
-        public postBody BodyObj;
+        public PostBody BodyObj;
 
+    }
+
+    [Serializable]
+    public class CreateNft
+    {
+        public string UpdaterPublicKeyBase58Check;
+        public string NFTPostHashHex;
+        public int NumCopies;
+        public int NFTRoyaltyToCreatorBasisPoints;
+        public int NFTRoyaltyToCoinBasisPoints;
+        public bool HasUnlockable;
+        public bool IsForSale;
+        public bool IsBuyNow;
+        public long BuyNowPriceNanos;
+        public JObject AdditionalDESORoyaltiesMap;
+        public JObject AdditionalDESOCoinsMap;
+        public int MinFeeRateNanosPerKB = 1000;
     }
 }
