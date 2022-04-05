@@ -49,4 +49,12 @@ namespace Desonity.Objects
         public int HotnessScore;
         public int PostMultiplier;
     }
+
+    [Serializable]
+    public class PostsList
+    {
+        public JObject json;
+        public List<PostEntry> Posts;
+        public string LastPostHashHex;
+    }
 }

@@ -2,6 +2,28 @@
 
 All notable changes for Desonity package will be documented in this file
 
+## [0.0.6](https://github.com/desonity/desonity/releases/tag/0.0.6) - 2022-04-05
+
+This release contains most common functions that might be useful for integrating deso with unity games. I hope future versions will be stable from now on and no breaking changes will be done. I will keep adding more endpoints support (Feel free to make a PR if you feel like adding support for an endpoint).
+
+### Changed
+
+- Renamed source files and moved methods according to official deso docs hierarchy. e.g. profile functions under `Users.cs`, post functions under `Posts.cs` etc.
+- `Helpers/Objects` contains classes for [deso data types](https://docs.deso.org/for-developers/backend/blockchain-data/basics/data-types)
+
+### Added
+
+- `createNFT` function.
+- `getPostsForPublicKey` function.
+
+### Removed
+
+- Examples folder.
+
+### TODO
+
+- write docs fr this time.
+
 ## 0.0.5 - 2022-04-04
 
 Users dont have to necessarily use the JObject anymore. Instead all API keys and values can be now accessed directly through class member variables.

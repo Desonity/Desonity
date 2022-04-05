@@ -28,6 +28,23 @@ namespace Desonity
             }
         }
 
+        public static async Task<PostsList> getPostsForPublicKey(GetPostsForPublicKey getPostsForPublicKey)
+        {
+            string endpoint = "/get-posts-for-public-key";
+            string postData = JsonConvert.SerializeObject(getPostsForPublicKey);
+            Response response = await Route.POST(endpoint, postData);
+            if (response.statusCode == 200)
+            {
+                PostsList postsList = JsonConvert.DeserializeObject<PostsList>(response.json.ToString());
+                postsList.json = (JObject)response.json;
+                return postsList;
+            }
+            else
+            {
+                throw new Exception("Error " + response.statusCode + " while creating getting posts for public key: " + response.json.ToString());
+            }
+        }
+
         public static async Task<PostEntry> submitPost(Identity identity, SubmitPost submitPost)
         {
             if (identity.getScope() == Desonity.IdentityScopes.READ_ONLY)

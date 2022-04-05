@@ -77,4 +77,15 @@ namespace Desonity.Endpoints
         public JObject AdditionalDESOCoinsMap;
         public int MinFeeRateNanosPerKB = 1000;
     }
+
+    [Serializable]
+    public class GetPostsForPublicKey
+    {
+        public string PublicKeyBase58Check;
+        public string Username;
+        public string ReaderPublicKeyBase58Check;
+        public string LastPostHashHex;
+        public int NumToFetch;
+        public bool MediaRequired;
+    }
 }
