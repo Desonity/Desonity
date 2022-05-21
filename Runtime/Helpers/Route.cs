@@ -8,6 +8,14 @@ using Newtonsoft.Json.Linq;
 using UnityEngine;
 using UnityEngine.Networking;
 
+namespace Desonity.Endpoints
+{
+    [Serializable]
+    public class SubmitTransaction
+    {
+        public string TransactionHex;
+    }
+}
 namespace Desonity
 {
     public class Response
