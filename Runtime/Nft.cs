@@ -21,7 +21,6 @@ namespace Desonity
             {
                 JObject nftJson = JObject.Parse(response.json["NFTsMap"].ToString());
                 return new NFTsMap { json = nftJson };
-
             }
             else
             {

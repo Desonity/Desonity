@@ -1,7 +1,5 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -87,5 +85,14 @@ namespace Desonity.Endpoints
         public string LastPostHashHex;
         public int NumToFetch;
         public bool MediaRequired;
+    }
+
+    [Serializable]
+    public class FollowUser
+    {
+        public string FollowerPublicKeyBase58Check;
+        public string FollowedPublicKeyBase58Check;
+        public bool IsUnfollow;
+        public int MinFeeRateNanosPerKB = 1000;
     }
 }

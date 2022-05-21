@@ -41,7 +41,7 @@ namespace Desonity
             }
             else
             {
-                throw new Exception("Error " + response.statusCode + " while creating getting posts for public key: " + response.json.ToString());
+                throw new Exception("Error " + response.statusCode + " while getting posts for public key: " + response.json.ToString());
             }
         }
 
