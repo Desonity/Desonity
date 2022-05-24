@@ -61,6 +61,22 @@ namespace Desonity
             }
         }
 
+        public static async Task<Response> appendExtraData(string TransactionHex, JObject extraData)
+        {
+            JObject postData = new JObject();
+            postData["TransactionHex"] = TransactionHex;
+            postData["ExtraData"] = extraData;
+            var response = await POST("/append-extra-data", postData.ToString());
+            if (response.statusCode == 200)
+            {
+                return response;
+            }
+            else
+            {
+                throw new Exception("Error " + response.statusCode + " while appending extra data\n" + response.json);
+            }
+        }
+
 
     }
 }

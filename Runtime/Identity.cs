@@ -13,47 +13,28 @@ namespace Desonity
         public static string READ_ONLY = "READ_ONLY";
         // Signing and submitting of transactions using seedHex provided in code, will sign using the flask backend
         public static string READ_WRITE_LOCAL_SEED = "READ_WRITE_LOCAL_SEED";
-        // Signing and submitting of transactions using Identity window from the flask backend
-        // UNSUPPORTED AS ON NOW, SEEMS COMPLICATED~
-        public static string READ_WRITE_IDENTITY = "READ_WRITE_IDENTITY";
+        // Signing and submitting transactions through derived keys
+        public static string READ_WRITE_DERIVED = "READ_WRITE_DERIVED";
     }
+
     public class Identity
     {
-        /* [DllImport("__Internal")] */
-        /* private static extern void callLogin(string objectName, string functionName); */
-        /* [DllImport("__Internal")] */
-        /* private static extern void approveTxn(string objectName, string functionName, string txnHex); */
         public string backendURL = null;
         public string appName = null;
         private string PublicKeyBase58Check = null;
         private string seedHex = null;
         private string scope;
+        private string DerivedPublicKey = null;
+        private string DerivedSeedHex = null;
 
-        /* #if UNITY_WEBGL && !UNITY_EDITOR */
-        /*         private bool useWebGL = true; */
-        /* #else */
-        /*         private bool useWebGL = false; */
-        /* #endif */
-        /* private string objectName; */
-        /* private string loginFunction; */
-
-
+        public Identity() { }
 
         public Identity(string PublicKeyBase58Check)
         {
             this.PublicKeyBase58Check = PublicKeyBase58Check;
             // Scope is READ_ONLY by default if only Public Key is passed
             this.scope = IdentityScopes.READ_ONLY;
-
         }
-
-        /* public Identity(string appName, string backendUrl) */
-        /* { */
-        /*     this.appName = UnityWebRequest.EscapeURL(appName); */
-        /*     this.backendURL = backendUrl; */
-        /*     // Scope is READ_ONLY by default if nothing is passed */
-        /*     this.scope = IdentityScopes.READ_ONLY; */
-        /* } */
 
         public Identity(string PublicKeyBase58Check, string seedHex)
         {
@@ -64,24 +45,19 @@ namespace Desonity
             this.scope = IdentityScopes.READ_WRITE_LOCAL_SEED;
         }
 
+        public Identity(string PublicKeyBase58Check, string DerivedPublicKey, string DerivedSeedHex)
+        {
+            this.scope = IdentityScopes.READ_WRITE_DERIVED;
+            this.PublicKeyBase58Check = PublicKeyBase58Check;
+            this.DerivedSeedHex = DerivedSeedHex;
+            this.DerivedPublicKey = DerivedPublicKey;
+        }
 
         public void setLoginURL(string backendURL, string appName)
         {
             this.backendURL = backendURL;
             this.appName = appName;
         }
-
-        /* public void setOptions(string objectName, string loginFunction) */
-        /* { */
-        /*     this.objectName = objectName; */
-        /*     this.loginFunction = loginFunction; */
-        /* #if UNITY_WEBGL && !UNITY_EDITOR */
-        /*             useWebGL = true; */
-        /* #else */
-        /*     useWebGL = false; */
-        /*     Debug.Log("Platform is not WebGL, Seperate Backend will be used instead. If you plan to build for webGL ignore this message."); */
-        /* #endif */
-        /* } */
 
         public string getScope()
         {
@@ -93,7 +69,7 @@ namespace Desonity
             string postData = "{\"uuid\":\"" + uuid + "\"}";
             int remainingTries = 60;
             int cooldownSeconds = 2;
-            string returnedKey = null;
+            string returnedData = null;
             while (remainingTries > 0)
             {
                 var uwr = new UnityWebRequest(keyUrl, "POST");
@@ -106,26 +82,26 @@ namespace Desonity
 
                 if (uwr.result == UnityWebRequest.Result.ConnectionError)
                 {
-                    returnedKey = null;
+                    returnedData = null;
                     break;
                 }
                 else
                 {
                     if (uwr.downloadHandler.text == "" || uwr.downloadHandler.text == null)
                     {
-                        returnedKey = null;
+                        returnedData = null;
                         await new WaitForSeconds(cooldownSeconds);
                     }
                     else
                     {
-                        returnedKey = uwr.downloadHandler.text;
+                        returnedData = uwr.downloadHandler.text;
                         break;
                     }
                 }
                 remainingTries--;
-                Debug.Log("waiting for login (" + remainingTries + ")");
+                /* Debug.Log("waiting for login (" + remainingTries + ")"); */
             }
-            if (remainingTries == 0 && (returnedKey == null || returnedKey == ""))
+            if (remainingTries == 0 && (returnedData == null || returnedData == ""))
             {
                 return new Response
                 {
@@ -137,48 +113,52 @@ namespace Desonity
             {
                 return new Response
                 {
-                    json = JObject.Parse("{\"PublicKeyBase58Check\":\"" + returnedKey + "\"}"),
+                    /* json = JObject.Parse("{\"PublicKeyBase58Check\":\"" + returnedKey + "\"}"), */
+                    json = JObject.Parse(returnedData),
                     statusCode = 200
                 };
             }
         }
 
-        public async void Login()
+        public async Task Login(bool derive = false)
         {
-            /* if (this.useWebGL) */
-            /* { */
-            /*     callLogin(this.objectName, this.loginFunction); */
-            /* } */
-            /* else */
+
+            if (this.backendURL == null)
             {
-                if (this.backendURL == null)
-                {
-                    throw new Exception("Backend URL was not passed");
-                }
-                if (this.appName == null)
-                {
-                    throw new Exception("App Name was not passed");
-                }
-                if (this.scope != null && this.PublicKeyBase58Check != null && this.seedHex != null)
-                {
-                    throw new Exception("Identity already initialized with scope " + this.scope);
-                }
-                Guid myuuid = Guid.NewGuid();
-                string myuuidAsString = myuuid.ToString();
+                throw new Exception("Backend URL was not passed");
+            }
+            if (this.appName == null)
+            {
+                throw new Exception("App Name was not passed");
+            }
+            if (this.scope != null && this.PublicKeyBase58Check != null && (this.seedHex != null || this.DerivedSeedHex != null))
+            {
+                throw new Exception("Identity already initialized with scope " + this.scope);
+            }
+            Guid myuuid = Guid.NewGuid();
+            string myuuidAsString = myuuid.ToString();
 
-                Application.OpenURL(backendURL + "/login/" + myuuidAsString + "?appname=" + appName);
+            string url = this.backendURL + "/login?uuid=" + myuuidAsString + "&appname=" + System.Uri.EscapeUriString(this.appName) + "&derive=" + derive.ToString().ToLower();
+            /* Debug.Log("Login URL: " + url); */
+            Application.OpenURL(url);
 
-                Response response = await checkLoggedIn(keyUrl: (backendURL + "/getKey"), uuid: myuuidAsString);
-                if (response.statusCode == 200 && response.json["PublicKeyBase58Check"] != null)
+            Response response = await checkLoggedIn(keyUrl: (backendURL + "/getKey"), uuid: myuuidAsString);
+            if (response.statusCode == 200 && response.json["publicKey"] != null)
+            {
+                Debug.Log(response.json);
+                this.PublicKeyBase58Check = (string)response.json["publicKey"];
+                this.scope = IdentityScopes.READ_ONLY;
+                if (response.json["derivedKey"] != null)
                 {
-                    this.PublicKeyBase58Check = (string)response.json["PublicKeyBase58Check"];
-                    this.scope = IdentityScopes.READ_ONLY;
-                    /* GameObject.Find(this.objectName).SendMessage(this.loginFunction, this.PublicKeyBase58Check); */
+                    this.DerivedPublicKey = (string)response.json["derivedPubliKey"];
+                    this.DerivedSeedHex = (string)response.json["derivedSeed"];
+                    this.scope = IdentityScopes.READ_WRITE_DERIVED;
                 }
-                else
-                {
-                    throw new Exception("Error " + response.statusCode + " while logging in: " + response.json["error"]);
-                }
+
+            }
+            else
+            {
+                throw new Exception("Error " + response.statusCode + " while logging in: " + response.json["error"]);
             }
         }
 
@@ -192,7 +172,7 @@ namespace Desonity
             return null;
         }
 
-        public string getSignedTxn(string txnHex)
+        public async Task<string> getSignedTxn(string txnHex)
         {
             if (this.scope == IdentityScopes.READ_ONLY)
             {
@@ -202,9 +182,13 @@ namespace Desonity
             {
                 return Desonity.Sign.SignTransaction(this.seedHex, txnHex);
             }
-            else if (this.scope == IdentityScopes.READ_WRITE_IDENTITY)
+            else if (this.scope == IdentityScopes.READ_WRITE_DERIVED)
             {
-                throw new Exception("Signing transactions for users with Identity is not supported yet.");
+                JObject extraData = new JObject();
+                extraData["DerivedPublicKey"] = this.DerivedPublicKey;
+                var response = await Route.appendExtraData(txnHex, extraData);
+                string appendedTxnHex = (string)response.json["TransactionHex"];
+                return Desonity.Sign.SignTransaction(this.DerivedSeedHex, appendedTxnHex);
             }
             else
             {
@@ -214,15 +198,7 @@ namespace Desonity
 
         public async Task<Response> submitTxn(string txn)
         {
-            string signed = this.getSignedTxn(txn);
-            if (signed == "NO_ERR")
-            {
-                return new Response
-                {
-                    json = JObject.Parse("{\"status\":\"FUNCTION_WILL_BE_CALLED_MANUALLY\"}"),
-                    statusCode = 200
-                };
-            }
+            string signed = await this.getSignedTxn(txn);
             if (signed != null && signed != "")
             {
                 var endpointClass = new Endpoints.SubmitTransaction

@@ -21,7 +21,7 @@ namespace Desonity
             {
                 ProfileEntry profileEntry = JsonConvert.DeserializeObject<ProfileEntry>(response.json["Profile"].ToString());
                 profileEntry.json = (JObject)response.json["Profile"];
-                profileEntry.AvatarUrl = Desonity.Route.getRoute() + "/get-single-profile-picture/" + profileEntry.json["AvatarUrl"].ToString() + "?fallback=" + Desonity.Route.getRoute() + "/assets/img/default_prfile_pic.png";
+                profileEntry.AvatarUrl = Desonity.Route.getRoute() + "/get-single-profile-picture/" + profileEntry.PublicKeyBase58Check + "?fallback=" + Desonity.Route.getRoute() + "/assets/img/default_prfile_pic.png";
                 return profileEntry;
             }
             else
@@ -40,7 +40,7 @@ namespace Desonity
             if (response.statusCode == 200)
             {
                 string transactionHex = response.json["TransactionHex"].ToString();
-                string signedTransaction = identity.getSignedTxn(transactionHex);
+                string signedTransaction = await identity.getSignedTxn(transactionHex);
 
                 Response submitResponse = await identity.submitTxn(signedTransaction);
                 if (submitResponse.statusCode == 200)
