@@ -73,40 +73,43 @@ namespace Desonity
             int failedAttempts = 0;
             while (remainingTries > 0)
             {
-                var uwr = new UnityWebRequest(keyUrl, "POST");
-                byte[] jsonToSend = new System.Text.UTF8Encoding().GetBytes(postData);
-                uwr.uploadHandler = (UploadHandler)new UploadHandlerRaw(jsonToSend);
-                uwr.downloadHandler = (DownloadHandler)new DownloadHandlerBuffer();
-                uwr.SetRequestHeader("Content-Type", "application/json");
-
-                await uwr.SendWebRequest();
-
-                if (uwr.result == UnityWebRequest.Result.ConnectionError)
+                using (UnityWebRequest uwr = new UnityWebRequest(keyUrl, "POST"))
                 {
-                    returnedData = null;
-                    failedAttempts++;
-                    break;
-                }
-                else
-                {
-                    if (uwr.downloadHandler.text == "" || uwr.downloadHandler.text == null)
+                    byte[] jsonToSend = new System.Text.UTF8Encoding().GetBytes(postData);
+                    uwr.uploadHandler = (UploadHandler)new UploadHandlerRaw(jsonToSend);
+                    uwr.downloadHandler = (DownloadHandler)new DownloadHandlerBuffer();
+                    uwr.SetRequestHeader("Content-Type", "application/json");
+
+                    await uwr.SendWebRequest();
+
+                    if (uwr.result == UnityWebRequest.Result.ConnectionError)
                     {
                         returnedData = null;
-                        await new WaitForSeconds(cooldownSeconds);
+                        failedAttempts++;
+                        break;
                     }
                     else
                     {
-                        returnedData = uwr.downloadHandler.text;
-                        break;
+                        if (uwr.downloadHandler.text == "" || uwr.downloadHandler.text == null)
+                        {
+                            returnedData = null;
+                            await new WaitForSeconds(cooldownSeconds);
+                        }
+                        else
+                        {
+                            returnedData = uwr.downloadHandler.text;
+                            break;
+                        }
                     }
+                    remainingTries--;
+                    /* Debug.Log("waiting for login (" + remainingTries + ")"); */
                 }
-                remainingTries--;
-                /* Debug.Log("waiting for login (" + remainingTries + ")"); */
             }
             if (remainingTries == 0 && (returnedData == null || returnedData == ""))
             {
                 throw new Exception("Login timed out");
-            }else if (failedAttempts > 0)
+            }
+            else if (failedAttempts > 0)
             {
                 throw new Exception("Login failed due to one or more connection errors");
             }

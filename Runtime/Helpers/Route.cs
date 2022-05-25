@@ -38,26 +38,27 @@ namespace Desonity
 
         public static async Task<Response> POST(string endpoint, string postData)
         {
-            var uwr = new UnityWebRequest(ROUTE + endpoint, "POST");
-            byte[] jsonToSend = new System.Text.UTF8Encoding().GetBytes(postData);
-            uwr.uploadHandler = (UploadHandler)new UploadHandlerRaw(jsonToSend);
-            uwr.downloadHandler = (DownloadHandler)new DownloadHandlerBuffer();
-            uwr.SetRequestHeader("Content-Type", "application/json");
-
-            await uwr.SendWebRequest();
-
-            if (uwr.result == UnityWebRequest.Result.ConnectionError)
+            using (UnityWebRequest uwr = new UnityWebRequest(ROUTE + endpoint, "POST"))
             {
-                throw new Exception("Connection Error");
-            }
-            else
-            {
-                Response returnThis = new Response
+                byte[] jsonToSend = new System.Text.UTF8Encoding().GetBytes(postData);
+                uwr.uploadHandler = (UploadHandler)new UploadHandlerRaw(jsonToSend);
+                uwr.downloadHandler = (DownloadHandler)new DownloadHandlerBuffer();
+                uwr.SetRequestHeader("Content-Type", "application/json");
+
+                await uwr.SendWebRequest();
+                if (uwr.result == UnityWebRequest.Result.ConnectionError)
                 {
-                    json = JObject.Parse(uwr.downloadHandler.text),
-                    statusCode = uwr.responseCode
-                };
-                return returnThis;
+                    throw new Exception("Connection Error");
+                }
+                else
+                {
+                    Response returnThis = new Response
+                    {
+                        json = JObject.Parse(uwr.downloadHandler.text),
+                        statusCode = uwr.responseCode
+                    };
+                    return returnThis;
+                }
             }
         }
 
@@ -66,7 +67,6 @@ namespace Desonity
             JObject postData = new JObject();
             postData["TransactionHex"] = TransactionHex;
             postData["ExtraData"] = extraData;
-            Debug.Log(postData);
             var response = await POST("/append-extra-data", postData.ToString());
             if (response.statusCode == 200)
             {

@@ -43,4 +43,7 @@ namespace Desonity.Objects
         public long CoinPriceDeSoNanos;
 
     }
+
+    [Serializable]
+    public class FollowUserResponse : TxnResponse { }
 }

@@ -79,5 +79,28 @@ namespace Desonity
             }
         }
 
+        public static async Task<CreatorCoinTransferResponse> transferCreatorCoin(Identity identity, TransferCreatorCoin transferCreatorCoin)
+        {
+            string endpoint = "/transfer-creator-coin";
+            transferCreatorCoin.SenderPublicKeyBase58Check = identity.getPublicKey();
+            if (identity.getScope() == IdentityScopes.READ_WRITE_DERIVED)
+            {
+                transferCreatorCoin.MinFeeRateNanosPerKB = 1700;
+            }
+            string postData = JsonConvert.SerializeObject(transferCreatorCoin);
+            Response response = await Route.POST(endpoint, postData);
+            if (response.statusCode == 200)
+            {
+                CreatorCoinTransferResponse creatorCoinTransferResponse = JsonConvert.DeserializeObject<CreatorCoinTransferResponse>(response.json.ToString());
+                creatorCoinTransferResponse.json = (JObject)response.json;
+                creatorCoinTransferResponse.identity = identity;
+                return creatorCoinTransferResponse;
+            }
+            else
+            {
+                throw new Exception("Error " + response.statusCode + " while transferring creator coin: " + response.json.ToString());
+            }
+        }
+
     }
 }

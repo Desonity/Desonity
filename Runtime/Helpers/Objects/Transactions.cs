@@ -6,63 +6,45 @@ using Newtonsoft.Json.Linq;
 namespace Desonity.Objects
 {
     [Serializable]
-    public class SendDesoResponse
-    {
+    public class TxnResponse
+    {   /*
+         * TxnResponse class will be inherited by every other class that requires seed signing and approval
+         * Since most of the fields are same
+         */
         public JObject json;
         public long TotalInputNanos;
-        public long SpendAmountNanos;
         public long ChangeAmountNanos;
+        public long SpendAmountNanos;
         public long FeeNanos;
-        public string TransactionIDBase58Check;
         public string TransactionHex;
-        public string TxnHashHex;
 
         public Identity identity;
         public async Task<Response> approveTxn()
         {
-            Response res = await identity.submitTxn(TransactionHex);
-            return res;
+            Response response = await identity.submitTxn(TransactionHex);
+            return response;
         }
     }
 
     [Serializable]
-    public class CreatorCoinBuyOrSellResponse
+    public class SendDesoResponse : TxnResponse
     {
-        public JObject json;
+        public string TransactionIDBase58Check;
+        public string TxnHashHex;
+    }
+
+    [Serializable]
+    public class CreatorCoinBuyOrSellResponse : TxnResponse
+    {
         public long ExpectedDesoReturnedNanos;
         public long ExpectedCreatorCoinReturnedNanos;
         public long FounderRewardGeneratedNanos;
-        public long SpendAmountNanos;
-        public long TotalInputNanos;
-        public long ChangeAmountNanos;
-        public long FeeNanos;
-        public string TransactionHex;
         public string TxnHashHex;
-
-        public Identity identity;
-        public async Task<Response> approveTxn()
-        {
-            Response res = await identity.submitTxn(TransactionHex);
-            return res;
-        }
     }
 
     [Serializable]
-    public class CreatorCoinTransferResponse
+    public class CreatorCoinTransferResponse : TxnResponse
     {
-        public JObject json;
-        public long SpendAmountNanos;
-        public long TotalInputNanos;
-        public long ChangeAmountNanos;
-        public long FeeNanos;
-        public string TransactionHex;
         public string TxnHashHex;
-
-        public Identity identity;
-        public async Task<Response> approveTxn()
-        {
-            Response res = await identity.submitTxn(TransactionHex);
-            return res;
-        }
     }
 }

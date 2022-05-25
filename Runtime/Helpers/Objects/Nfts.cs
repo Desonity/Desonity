@@ -38,21 +38,9 @@ namespace Desonity.Objects
     }
 
     [Serializable]
-    public class CreateNftResponse
+    public class CreateNftResponse : TxnResponse
     {
-        public JObject json;
         public string NFTPostHashHex;
-        public long TotalInputNanos;
-        public long ChangeAmountNanos;
-        public long FeeNanos;
-        public string TransactionHex;
-
-        public Identity identity;
-        public async Task<Response> approveTxn()
-        {
-            Response res = await identity.submitTxn(TransactionHex);
-            return res;
-        }
     }
 
 }

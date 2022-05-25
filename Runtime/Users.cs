@@ -31,26 +31,22 @@ namespace Desonity
 
         }
 
-        public static async Task<Response> followUser(Identity identity, FollowUser followUser)
+        public static async Task<FollowUserResponse> followUser(Identity identity, FollowUser followUser)
         {
             string endpoint = "/follow-user";
+            followUser.FollowerPublicKeyBase58Check = identity.getPublicKey();
+            if(identity.getScope() == IdentityScopes.READ_WRITE_DERIVED){
+                followUser.MinFeeRateNanosPerKB = 1700;
+            }
             string postData = JsonConvert.SerializeObject(followUser);
 
             Response response = await Route.POST(endpoint, postData);
             if (response.statusCode == 200)
             {
-                string transactionHex = response.json["TransactionHex"].ToString();
-                string signedTransaction = await identity.getSignedTxn(transactionHex);
-
-                Response submitResponse = await identity.submitTxn(signedTransaction);
-                if (submitResponse.statusCode == 200)
-                {
-                    return submitResponse;
-                }
-                else
-                {
-                    throw new Exception("Error while submitting transaction: " + submitResponse.json);
-                }
+                FollowUserResponse followUserResponse = JsonConvert.DeserializeObject<FollowUserResponse>(response.json.ToString());
+                followUserResponse.json = (JObject)response.json;
+                followUserResponse.identity = identity;
+                return followUserResponse;
             }
             else
             {

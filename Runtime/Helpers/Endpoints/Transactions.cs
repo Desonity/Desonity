@@ -39,7 +39,7 @@ namespace Desonity.Endpoints
     [Serializable]
     public class TransferCreatorCoin
     {
-        public string SenderrPublicKeyBase58Check;
+        public string SenderPublicKeyBase58Check;
         public string CreatorPublicKeyBase58Check;
         public string ReceiverUsernameOrPublicKeyBase58Check;
         public string CreatorCoinToTransferNanos;
