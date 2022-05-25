@@ -1,5 +1,5 @@
 using System;
-using System.Collections;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using UnityEngine;
 using Newtonsoft.Json;
@@ -56,5 +56,24 @@ namespace Desonity.Objects
         public JObject json;
         public List<PostEntry> Posts;
         public string LastPostHashHex;
+    }
+
+    [Serializable]
+    public class SubmitPostResponse
+    {
+        public JObject json;
+        public long TstampNanos;
+        public string PostHashHex;
+        public long TotalInputNanos;
+        public long ChangeAmountNanos;
+        public long FeeNanos;
+        public string TransactionHex;
+
+        public Identity identity;
+        public async Task<Response> approveTxn()
+        {
+            Response res = await identity.submitTxn(TransactionHex);
+            return res;
+        }
     }
 }

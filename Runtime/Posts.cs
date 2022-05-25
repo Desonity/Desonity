@@ -45,31 +45,26 @@ namespace Desonity
             }
         }
 
-        public static async Task<PostEntry> submitPost(Identity identity, SubmitPost submitPost)
+        public static async Task<SubmitPostResponse> submitPost(Identity identity, SubmitPost submitPost)
         {
             string endpoint = "/submit-post";
             submitPost.UpdaterPublicKeyBase58Check = identity.getPublicKey();
-            string postData = JsonConvert.SerializeObject(submitPost);
-            Response submitPostResponse = await Route.POST(endpoint, postData);
-            if (submitPostResponse.statusCode == 200)
+            if (identity.getScope() == IdentityScopes.READ_WRITE_DERIVED)
             {
-                JObject json = submitPostResponse.json;
-                string TransactionHex = (string)json["TransactionHex"];
-                Response signResponse = await identity.submitTxn(TransactionHex);
-                if (signResponse.statusCode == 200)
-                {
-                    PostEntry postEntry = JsonConvert.DeserializeObject<PostEntry>(signResponse.json["PostEntryResponse"].ToString());
-                    postEntry.json = (JObject)signResponse.json["PostEntryResponse"];
-                    return postEntry;
-                }
-                else
-                {
-                    throw new Exception("Error " + signResponse.statusCode + " while submitting signed transaction: " + signResponse.json.ToString());
-                }
+                submitPost.MinFeeRateNanosPerKB = 1700;
+            }
+            string postData = JsonConvert.SerializeObject(submitPost);
+            Response response = await Route.POST(endpoint, postData);
+            if (response.statusCode == 200)
+            {
+                SubmitPostResponse submitPostResponse = JsonConvert.DeserializeObject<SubmitPostResponse>(response.json.ToString());
+                submitPostResponse.json = (JObject)response.json;
+                submitPostResponse.identity = identity;
+                return submitPostResponse;
             }
             else
             {
-                throw new Exception("Error " + submitPostResponse.statusCode + " while creating post transaction: " + submitPostResponse.json.ToString());
+                throw new Exception("Error " + response.statusCode + " while creating post transaction: " + response.json.ToString());
             }
         }
     }

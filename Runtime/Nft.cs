@@ -47,25 +47,22 @@ namespace Desonity
 
         }
 
-        public static async Task<string> createNft(Identity identity, CreateNft createNft)
+        public static async Task<CreateNftResponse> createNft(Identity identity, CreateNft createNft)
         {
             string endpoint = "/create-nft";
+            createNft.UpdaterPublicKeyBase58Check = identity.getPublicKey();
+            if (identity.getScope() == IdentityScopes.READ_WRITE_DERIVED)
+            {
+                createNft.MinFeeRateNanosPerKB = 1700;
+            }
             string postData = JsonConvert.SerializeObject(createNft);
             Response response = await Route.POST(endpoint, postData);
             if (response.statusCode == 200)
             {
-                JObject json = response.json;
-                string TransactionHex = (string)json["TransactionHex"];
-                Response signResponse = await identity.submitTxn(TransactionHex);
-                Debug.Log(signResponse.json);
-                if (signResponse.statusCode == 200)
-                {
-                    return signResponse.json["TxnHashHex"].ToString();
-                }
-                else
-                {
-                    throw new Exception("Error " + signResponse.statusCode + " while submitting signed transaction: " + signResponse.json.ToString());
-                }
+                CreateNftResponse createNftResponse = JsonConvert.DeserializeObject<CreateNftResponse>(response.json.ToString());
+                createNftResponse.json = (JObject)response.json;
+                createNftResponse.identity = identity;
+                return createNftResponse;
             }
             else
             {

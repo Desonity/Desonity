@@ -66,6 +66,7 @@ namespace Desonity
             JObject postData = new JObject();
             postData["TransactionHex"] = TransactionHex;
             postData["ExtraData"] = extraData;
+            Debug.Log(postData);
             var response = await POST("/append-extra-data", postData.ToString());
             if (response.statusCode == 200)
             {

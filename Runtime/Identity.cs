@@ -67,9 +67,10 @@ namespace Desonity
         private async Task<Response> checkLoggedIn(string keyUrl, string uuid)
         {
             string postData = "{\"uuid\":\"" + uuid + "\"}";
-            int remainingTries = 60;
-            int cooldownSeconds = 2;
+            int remainingTries = 40;
+            int cooldownSeconds = 3;
             string returnedData = null;
+            int failedAttempts = 0;
             while (remainingTries > 0)
             {
                 var uwr = new UnityWebRequest(keyUrl, "POST");
@@ -83,6 +84,7 @@ namespace Desonity
                 if (uwr.result == UnityWebRequest.Result.ConnectionError)
                 {
                     returnedData = null;
+                    failedAttempts++;
                     break;
                 }
                 else
@@ -103,11 +105,10 @@ namespace Desonity
             }
             if (remainingTries == 0 && (returnedData == null || returnedData == ""))
             {
-                return new Response
-                {
-                    json = JObject.Parse("{\"error\":\"Login Timed Out\"}"),
-                    statusCode = 0
-                };
+                throw new Exception("Login timed out");
+            }else if (failedAttempts > 0)
+            {
+                throw new Exception("Login failed due to one or more connection errors");
             }
             else
             {
@@ -145,12 +146,12 @@ namespace Desonity
             Response response = await checkLoggedIn(keyUrl: (backendURL + "/getKey"), uuid: myuuidAsString);
             if (response.statusCode == 200 && response.json["publicKey"] != null)
             {
-                Debug.Log(response.json);
+                /* Debug.Log(response.json); */
                 this.PublicKeyBase58Check = (string)response.json["publicKey"];
                 this.scope = IdentityScopes.READ_ONLY;
                 if (response.json["derivedKey"] != null)
                 {
-                    this.DerivedPublicKey = (string)response.json["derivedPubliKey"];
+                    this.DerivedPublicKey = (string)response.json["derivedKey"];
                     this.DerivedSeedHex = (string)response.json["derivedSeed"];
                     this.scope = IdentityScopes.READ_WRITE_DERIVED;
                 }

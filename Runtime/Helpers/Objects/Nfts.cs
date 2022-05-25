@@ -1,5 +1,5 @@
 using System;
-using System.Collections;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -35,6 +35,24 @@ namespace Desonity.Objects
     {
         public JObject json;
         // response json is a bit complicated for me to convert into C# native objects; so use this json object for now
+    }
+
+    [Serializable]
+    public class CreateNftResponse
+    {
+        public JObject json;
+        public string NFTPostHashHex;
+        public long TotalInputNanos;
+        public long ChangeAmountNanos;
+        public long FeeNanos;
+        public string TransactionHex;
+
+        public Identity identity;
+        public async Task<Response> approveTxn()
+        {
+            Response res = await identity.submitTxn(TransactionHex);
+            return res;
+        }
     }
 
 }
