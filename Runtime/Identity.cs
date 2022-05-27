@@ -1,5 +1,7 @@
 using System;
 using System.Threading.Tasks;
+using System.Security.Cryptography;
+using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
@@ -220,6 +222,86 @@ namespace Desonity
                     json = JObject.Parse("{\"error\":\"No signed transaction\"}"),
                     statusCode = 0
                 };
+            }
+        }
+
+        public void saveKeys(string KEY32, string IV16)
+        {
+            if (KEY32.Length != 32) { throw new Exception("KEY must be 32 characters long"); }
+            if (IV16.Length != 16) { throw new Exception("IV must be 16 characters long"); }
+            AesCryptoServiceProvider aes = new AesCryptoServiceProvider();
+            aes.BlockSize = 128;
+            aes.KeySize = 256;
+            aes.Mode = CipherMode.CBC;
+            aes.Padding = PaddingMode.PKCS7;
+            aes.Key = Encoding.UTF8.GetBytes(KEY32);
+            aes.IV = Encoding.UTF8.GetBytes(IV16);
+
+            byte[] pubKeyEnc = aes.CreateEncryptor().TransformFinalBlock(Encoding.UTF8.GetBytes(this.PublicKeyBase58Check), 0, this.PublicKeyBase58Check.Length);
+            PlayerPrefs.SetString("publicKey", Convert.ToBase64String(pubKeyEnc));
+            PlayerPrefs.SetString("scope", this.scope);
+            if (this.scope == IdentityScopes.READ_WRITE_LOCAL_SEED)
+            {
+                // encrypt the seed
+                byte[] seedEnc = aes.CreateEncryptor().TransformFinalBlock(Encoding.UTF8.GetBytes(this.seedHex), 0, this.seedHex.Length);
+                PlayerPrefs.SetString("seedHex", Convert.ToBase64String(seedEnc));
+            }
+            else if (this.scope == IdentityScopes.READ_WRITE_DERIVED)
+            {
+                // encrypt the derived seed, derived key
+                byte[] derivedSeedEnc = aes.CreateEncryptor().TransformFinalBlock(Encoding.UTF8.GetBytes(this.DerivedSeedHex), 0, this.DerivedSeedHex.Length);
+                byte[] derivedKeyEnc = aes.CreateEncryptor().TransformFinalBlock(Encoding.UTF8.GetBytes(this.DerivedPublicKey), 0, this.DerivedPublicKey.Length);
+                PlayerPrefs.SetString("DerivedPublicKey", Convert.ToBase64String(derivedKeyEnc));
+                PlayerPrefs.SetString("DerivedSeedHex", Convert.ToBase64String(derivedSeedEnc));
+            }
+            else if (this.scope != IdentityScopes.READ_ONLY)
+            {
+                throw new Exception("Unknown Identity scope");
+            }
+            PlayerPrefs.Save();
+
+        }
+
+        public void loadKeys(string KEY32, string IV16)
+        {
+            if (KEY32.Length != 32) { throw new Exception("KEY must be 32 characters long"); }
+            if (IV16.Length != 16) { throw new Exception("IV must be 16 characters long"); }
+            AesCryptoServiceProvider aes = new AesCryptoServiceProvider();
+            aes.BlockSize = 128;
+            aes.KeySize = 256;
+            aes.Mode = CipherMode.CBC;
+            aes.Padding = PaddingMode.PKCS7;
+            aes.Key = Encoding.UTF8.GetBytes(KEY32);
+            aes.IV = Encoding.UTF8.GetBytes(IV16);
+
+            string scope = PlayerPrefs.GetString("scope");
+            this.scope = scope;
+            string pubkey = PlayerPrefs.GetString("publicKey");
+
+            byte[] encPubKey = Convert.FromBase64String(pubkey);
+            byte[] decryptedPubKey = aes.CreateDecryptor().TransformFinalBlock(encPubKey, 0, encPubKey.Length);
+            this.PublicKeyBase58Check = ASCIIEncoding.ASCII.GetString(decryptedPubKey);
+            if (scope == IdentityScopes.READ_WRITE_LOCAL_SEED)
+            {
+                string encSeed = PlayerPrefs.GetString("seedHex");
+                byte[] encSeedBytes = Convert.FromBase64String(encSeed);
+                byte[] decSeedBytes = aes.CreateDecryptor().TransformFinalBlock(encSeedBytes, 0, encSeedBytes.Length);
+                this.seedHex = ASCIIEncoding.ASCII.GetString(decSeedBytes);
+            }
+            else if (scope == IdentityScopes.READ_WRITE_DERIVED)
+            {
+                string encDerivedSeed = PlayerPrefs.GetString("DerivedSeedHex");
+                byte[] encDerivedSeedBytes = Convert.FromBase64String(encDerivedSeed);
+                byte[] decDerivedSeedBytes = aes.CreateDecryptor().TransformFinalBlock(encDerivedSeedBytes, 0, encDerivedSeedBytes.Length);
+                this.DerivedSeedHex = ASCIIEncoding.ASCII.GetString(decDerivedSeedBytes);
+                string encDerivedKey = PlayerPrefs.GetString("DerivedPublicKey");
+                byte[] encDerivedKeyBytes = Convert.FromBase64String(encDerivedKey);
+                byte[] decDerivedKeyBytes = aes.CreateDecryptor().TransformFinalBlock(encDerivedKeyBytes, 0, encDerivedKeyBytes.Length);
+                this.DerivedPublicKey = ASCIIEncoding.ASCII.GetString(decDerivedKeyBytes);
+            }
+            else if (scope != IdentityScopes.READ_ONLY)
+            {
+                throw new Exception("Unknown Identity scope");
             }
         }
     }
