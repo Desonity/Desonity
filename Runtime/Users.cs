@@ -31,11 +31,50 @@ namespace Desonity
 
         }
 
+        public static async Task<GetHodlersResponse> getHodlersForPublicKey(GetHodlersForPublicKey getHodlers)
+        {
+            string endpoint = "/get-hodlers-for-public-key";
+            string postData = JsonConvert.SerializeObject(getHodlers);
+
+            Response response = await Route.POST(endpoint, postData);
+
+            if (response.statusCode == 200)
+            {
+                GetHodlersResponse getHodlersResponse = JsonConvert.DeserializeObject<GetHodlersResponse>(response.json.ToString());
+                getHodlersResponse.json = (JObject)response.json;
+                return getHodlersResponse;
+            }
+            else
+            {
+                throw new Exception("Error while getting hodlers for public key: " + response.json);
+            }
+        }
+
+        public static async Task<IsHodlingResponse> isHodlingPublicKey(IsHodlingPublicKey isHodling)
+        {
+            string endpoint = "/is-hodling-public-key";
+            string postData = JsonConvert.SerializeObject(isHodling);
+
+            Response response = await Route.POST(endpoint, postData);
+
+            if (response.statusCode == 200)
+            {
+                IsHodlingResponse isHodlingResponse = JsonConvert.DeserializeObject<IsHodlingResponse>(response.json.ToString());
+                isHodlingResponse.json = (JObject)response.json;
+                return isHodlingResponse;
+            }
+            else
+            {
+                throw new Exception("Error while checking if hodling public key: " + response.json);
+            }
+        }
+
         public static async Task<FollowUserResponse> followUser(Identity identity, FollowUser followUser)
         {
             string endpoint = "/follow-user";
             followUser.FollowerPublicKeyBase58Check = identity.getPublicKey();
-            if(identity.getScope() == IdentityScopes.READ_WRITE_DERIVED){
+            if (identity.getScope() == IdentityScopes.READ_WRITE_DERIVED)
+            {
                 followUser.MinFeeRateNanosPerKB = 1700;
             }
             string postData = JsonConvert.SerializeObject(followUser);

@@ -41,7 +41,33 @@ namespace Desonity.Objects
         public CoinEntryObj CoinEntry;
         public DAOCoinEntryObj DAOCoinEntry;
         public long CoinPriceDeSoNanos;
+    }
 
+    [Serializable]
+    public class BalanceEntry
+    {
+        public string MODlerPublicKeyBase58Check;
+        public string CreatorPublicKeyBase58Check;
+        public bool HasPurchased;
+        public long BalanceNanos;
+        public string BalanceNanosUint256;
+        public long NetBalanceInMempool;
+        public ProfileEntry ProfileEntryResponse;
+    }
+
+    [Serializable]
+    public class GetHodlersResponse
+    {
+        public JObject json;
+        public List<BalanceEntry> Hodlers;
+    }
+
+    [Serializable]
+    public class IsHodlingResponse
+    {
+        public JObject json;
+        public bool IsHodling;
+        public BalanceEntry BalanceEntry;
     }
 
     [Serializable]

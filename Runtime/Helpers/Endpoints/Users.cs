@@ -14,6 +14,26 @@ namespace Desonity.Endpoints
     }
 
     [Serializable]
+    public class GetHodlersForPublicKey
+    {
+        public string PublicKeyBase58Check;
+        public string Username;
+        public string LastPublicKeyBase58Check;
+        public int NumToFetch;
+        public bool FetchHodlings;
+        public bool FetchAll;
+        public bool IsDAOCoin = false;
+    }
+
+    [Serializable]
+    public class IsHodlingPublicKey
+    {
+        public string PublicKeyBase58Check;
+        public string IsHodlingPublicKeyBase58Check;
+        public bool IsDAOCoin = false;
+    }
+
+    [Serializable]
     public class FollowUser
     {
         public string FollowerPublicKeyBase58Check;
