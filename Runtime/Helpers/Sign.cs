@@ -12,6 +12,7 @@ using Org.BouncyCastle.Crypto.Signers;
 using Org.BouncyCastle.Math;
 using Org.BouncyCastle.Security;
 using Newtonsoft.Json;
+using System.Security.Cryptography;
 
 namespace Desonity
 {
@@ -71,67 +72,6 @@ namespace Desonity
             if (input.StartsWith("0x")) input = input.Remove(0, 2);
 
             return Enumerable.Range(0, input.Length / 2).Select(x => System.Convert.ToByte(input.Substring(x * 2, 2), 16)).ToArray();
-        }
-
-        // WIP
-        public static string GetJWT(string privateKey)
-        {
-            List<string> segments = new List<string>();
-            var header = new { alg = "ES256", typ = "JWT" };
-
-            DateTime issued = DateTime.Now;
-            DateTime expire = DateTime.Now.AddHours(10);
-
-            byte[] headerBytes = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(header, Formatting.None));
-            byte[] payloadBytes = Encoding.UTF8.GetBytes("");// payload
-
-            segments.Add(Base64UrlEncode(headerBytes));
-            segments.Add(Base64UrlEncode(payloadBytes));
-
-            string stringToSign = string.Join(".", segments.ToArray());
-
-            byte[] bytesToSign = Encoding.UTF8.GetBytes(stringToSign);
-
-            byte[] keyBytes = Convert.FromBase64String(privateKey);
-
-            var privKeyObj = Asn1Object.FromByteArray(keyBytes);
-            var privStruct = RsaPrivateKeyStructure.GetInstance((Asn1Sequence)privKeyObj);
-
-            ISigner sig = SignerUtilities.GetSigner("SHA256withRSA");
-
-            sig.Init(true, new RsaKeyParameters(true, privStruct.Modulus, privStruct.PrivateExponent));
-
-            sig.BlockUpdate(bytesToSign, 0, bytesToSign.Length);
-            byte[] signature = sig.GenerateSignature();
-
-            segments.Add(Base64UrlEncode(signature));
-            return string.Join(".", segments.ToArray());
-        }
-        // from JWT spec
-        private static string Base64UrlEncode(byte[] input)
-        {
-            var output = Convert.ToBase64String(input);
-            output = output.Split('=')[0]; // Remove any trailing '='s
-            output = output.Replace('+', '-'); // 62nd char of encoding
-            output = output.Replace('/', '_'); // 63rd char of encoding
-            return output;
-        }
-
-        private static byte[] Base64UrlDecode(string input)
-        {
-            var output = input;
-            output = output.Replace('-', '+'); // 62nd char of encoding
-            output = output.Replace('_', '/'); // 63rd char of encoding
-            switch (output.Length % 4) // Pad with trailing '='s
-            {
-                case 0: break; // No pad chars in this case
-                case 1: output += "==="; break; // Three pad chars
-                case 2: output += "=="; break; // Two pad chars
-                case 3: output += "="; break; // One pad char
-                default: throw new System.Exception("Illegal base64url string!");
-            }
-            var converted = Convert.FromBase64String(output); // Standard base64 decoder
-            return converted;
         }
     }
 }
