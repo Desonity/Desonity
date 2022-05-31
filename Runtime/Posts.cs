@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Collections;
 using System.Threading.Tasks;
 using Desonity.Endpoints;
@@ -6,6 +7,7 @@ using Desonity.Objects;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
+using UnityEngine.Networking;
 
 namespace Desonity
 {
@@ -66,6 +68,35 @@ namespace Desonity
             {
                 throw new Exception("Error " + response.statusCode + " while creating post transaction: " + response.json.ToString());
             }
+        }
+
+        public static async Task<Response> uploadImage(Identity identity, byte[] imageBytes){
+            string endpoint = "/upload-image";
+            WWWForm form = new WWWForm();
+            form.AddBinaryData("file", imageBytes, "image.png");
+            form.AddField("UserPublicKeyBase58Check", identity.getDerivedPublicKey());
+            form.AddField("JWT", identity.getDerivedJwt());
+
+            UnityWebRequest www = UnityWebRequest.Post(Route.getRoute() + endpoint, form);
+            await www.SendWebRequest();
+
+            if(www.result == UnityWebRequest.Result.ConnectionError){
+                throw new Exception(www.error);
+            }
+            else{
+                Response uploadResponse = new Response{
+                    json = JObject.Parse(www.downloadHandler.text),
+                    statusCode = www.responseCode,
+                };
+                if(www.downloadHandler.text.Contains("error")){
+                    throw new Exception(uploadResponse.json["error"].ToString());
+                }else{
+                    uploadResponse.data = (string)uploadResponse.json["ImageURL"];
+                }
+                return uploadResponse;
+                
+            }
+
         }
     }
 }

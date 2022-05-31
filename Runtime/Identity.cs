@@ -1,7 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using System.Security.Cryptography;
-using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
@@ -25,9 +23,10 @@ namespace Desonity
         public string appName = null;
         private string PublicKeyBase58Check = null;
         private string seedHex = null;
-        private string scope;
+        private string scope = null;
         private string DerivedPublicKey = null;
         private string DerivedSeedHex = null;
+        private string DerivedJWT = null;
 
         public Identity() { }
 
@@ -64,6 +63,37 @@ namespace Desonity
         public string getScope()
         {
             return this.scope;
+        }
+
+        public string getPublicKey()
+        {
+            if (this.PublicKeyBase58Check != null)
+            {
+                return this.PublicKeyBase58Check;
+            }
+            Debug.Log("You Must Login Using Identity.Login() before using the Identity object with any other class or method");
+            return null;
+        }
+
+        public string getDerivedPublicKey(){
+            if (this.DerivedPublicKey != null)
+            {
+                return this.DerivedPublicKey;
+            }
+            Debug.Log("You Must Login Using Identity.Login() before using the Identity object with any other class or method");
+            return null;
+        }
+
+        public string getDerivedJwt()
+        {
+            if (this.scope == IdentityScopes.READ_WRITE_DERIVED)
+            {
+                return this.DerivedJWT;
+            }
+            else
+            {
+                throw new Exception("JWT not available for scope " + this.scope);
+            }
         }
 
         private async Task<Response> checkLoggedIn(string keyUrl, string uuid)
@@ -158,6 +188,7 @@ namespace Desonity
                 {
                     this.DerivedPublicKey = (string)response.json["derivedKey"];
                     this.DerivedSeedHex = (string)response.json["derivedSeed"];
+                    this.DerivedJWT = (string)response.json["derivedJwt"];
                     this.scope = IdentityScopes.READ_WRITE_DERIVED;
                 }
 
@@ -166,16 +197,6 @@ namespace Desonity
             {
                 throw new Exception("Error " + response.statusCode + " while logging in: " + response.json["error"]);
             }
-        }
-
-        public string getPublicKey()
-        {
-            if (this.PublicKeyBase58Check != null)
-            {
-                return this.PublicKeyBase58Check;
-            }
-            Debug.Log("You Must Login Using Identity.Login() before using the Identity object with any other class or method");
-            return null;
         }
 
         public async Task<string> getSignedTxn(string txnHex)
@@ -225,84 +246,57 @@ namespace Desonity
             }
         }
 
-        public void saveKeys(string KEY32, string IV16)
+        public void saveKeys()
         {
-            if (KEY32.Length != 32) { throw new Exception("KEY must be 32 characters long"); }
-            if (IV16.Length != 16) { throw new Exception("IV must be 16 characters long"); }
-            AesCryptoServiceProvider aes = new AesCryptoServiceProvider();
-            aes.BlockSize = 128;
-            aes.KeySize = 256;
-            aes.Mode = CipherMode.CBC;
-            aes.Padding = PaddingMode.PKCS7;
-            aes.Key = Encoding.UTF8.GetBytes(KEY32);
-            aes.IV = Encoding.UTF8.GetBytes(IV16);
-
-            byte[] pubKeyEnc = aes.CreateEncryptor().TransformFinalBlock(Encoding.UTF8.GetBytes(this.PublicKeyBase58Check), 0, this.PublicKeyBase58Check.Length);
-            PlayerPrefs.SetString("publicKey", Convert.ToBase64String(pubKeyEnc));
-            PlayerPrefs.SetString("scope", this.scope);
+            PlayerPrefs.SetString("publicKey", Encryption.Encrypt(this.PublicKeyBase58Check));
+            PlayerPrefs.SetString("scope", Encryption.Encrypt(this.scope));
             if (this.scope == IdentityScopes.READ_WRITE_LOCAL_SEED)
             {
                 // encrypt the seed
-                byte[] seedEnc = aes.CreateEncryptor().TransformFinalBlock(Encoding.UTF8.GetBytes(this.seedHex), 0, this.seedHex.Length);
-                PlayerPrefs.SetString("seedHex", Convert.ToBase64String(seedEnc));
+                PlayerPrefs.SetString("seedHex", Encryption.Encrypt(this.seedHex));
             }
             else if (this.scope == IdentityScopes.READ_WRITE_DERIVED)
             {
                 // encrypt the derived seed, derived key
-                byte[] derivedSeedEnc = aes.CreateEncryptor().TransformFinalBlock(Encoding.UTF8.GetBytes(this.DerivedSeedHex), 0, this.DerivedSeedHex.Length);
-                byte[] derivedKeyEnc = aes.CreateEncryptor().TransformFinalBlock(Encoding.UTF8.GetBytes(this.DerivedPublicKey), 0, this.DerivedPublicKey.Length);
-                PlayerPrefs.SetString("DerivedPublicKey", Convert.ToBase64String(derivedKeyEnc));
-                PlayerPrefs.SetString("DerivedSeedHex", Convert.ToBase64String(derivedSeedEnc));
+                PlayerPrefs.SetString("DerivedPublicKey", Encryption.Encrypt(this.DerivedPublicKey));
+                PlayerPrefs.SetString("DerivedSeedHex", Encryption.Encrypt(this.DerivedSeedHex));
+                PlayerPrefs.SetString("DerivedJWT", Encryption.Encrypt(this.DerivedJWT));
             }
             else if (this.scope != IdentityScopes.READ_ONLY)
             {
                 throw new Exception("Unknown Identity scope");
             }
             PlayerPrefs.Save();
-
         }
 
-        public void loadKeys(string KEY32, string IV16)
+        public void loadKeys()
         {
-            if (KEY32.Length != 32) { throw new Exception("KEY must be 32 characters long"); }
-            if (IV16.Length != 16) { throw new Exception("IV must be 16 characters long"); }
-            AesCryptoServiceProvider aes = new AesCryptoServiceProvider();
-            aes.BlockSize = 128;
-            aes.KeySize = 256;
-            aes.Mode = CipherMode.CBC;
-            aes.Padding = PaddingMode.PKCS7;
-            aes.Key = Encoding.UTF8.GetBytes(KEY32);
-            aes.IV = Encoding.UTF8.GetBytes(IV16);
-
-            string scope = PlayerPrefs.GetString("scope");
-            this.scope = scope;
-            string pubkey = PlayerPrefs.GetString("publicKey");
-
-            byte[] encPubKey = Convert.FromBase64String(pubkey);
-            byte[] decryptedPubKey = aes.CreateDecryptor().TransformFinalBlock(encPubKey, 0, encPubKey.Length);
-            this.PublicKeyBase58Check = ASCIIEncoding.ASCII.GetString(decryptedPubKey);
+            this.scope = Encryption.Decrypt(PlayerPrefs.GetString("scope"));
+            this.PublicKeyBase58Check = Encryption.Decrypt(PlayerPrefs.GetString("publicKey"));
             if (scope == IdentityScopes.READ_WRITE_LOCAL_SEED)
             {
-                string encSeed = PlayerPrefs.GetString("seedHex");
-                byte[] encSeedBytes = Convert.FromBase64String(encSeed);
-                byte[] decSeedBytes = aes.CreateDecryptor().TransformFinalBlock(encSeedBytes, 0, encSeedBytes.Length);
-                this.seedHex = ASCIIEncoding.ASCII.GetString(decSeedBytes);
+                this.seedHex = Encryption.Decrypt(PlayerPrefs.GetString("seedHex"));
             }
             else if (scope == IdentityScopes.READ_WRITE_DERIVED)
             {
-                string encDerivedSeed = PlayerPrefs.GetString("DerivedSeedHex");
-                byte[] encDerivedSeedBytes = Convert.FromBase64String(encDerivedSeed);
-                byte[] decDerivedSeedBytes = aes.CreateDecryptor().TransformFinalBlock(encDerivedSeedBytes, 0, encDerivedSeedBytes.Length);
-                this.DerivedSeedHex = ASCIIEncoding.ASCII.GetString(decDerivedSeedBytes);
-                string encDerivedKey = PlayerPrefs.GetString("DerivedPublicKey");
-                byte[] encDerivedKeyBytes = Convert.FromBase64String(encDerivedKey);
-                byte[] decDerivedKeyBytes = aes.CreateDecryptor().TransformFinalBlock(encDerivedKeyBytes, 0, encDerivedKeyBytes.Length);
-                this.DerivedPublicKey = ASCIIEncoding.ASCII.GetString(decDerivedKeyBytes);
+                this.DerivedSeedHex = Encryption.Decrypt(PlayerPrefs.GetString("DerivedSeedHex"));
+                this.DerivedPublicKey = Encryption.Decrypt(PlayerPrefs.GetString("DerivedPublicKey"));
+                this.DerivedJWT = Encryption.Decrypt(PlayerPrefs.GetString("DerivedJWT"));
             }
             else if (scope != IdentityScopes.READ_ONLY)
             {
                 throw new Exception("Unknown Identity scope");
             }
+        }
+
+        public void logout(){
+            PlayerPrefs.DeleteAll();
+            this.scope = null;
+            this.PublicKeyBase58Check = null;
+            this.seedHex = null;
+            this.DerivedSeedHex = null;
+            this.DerivedPublicKey = null;
+            this.DerivedJWT = null;
         }
     }
 }

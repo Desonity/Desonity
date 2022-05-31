@@ -23,6 +23,7 @@ namespace Desonity
         public JObject json { get; set; }
         public JArray array { get; set; }
         public long statusCode { get; set; }
+        public string data { get; set; }
     }
     public static class Route
     {
