@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Collections;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Desonity.Endpoints;
 using Desonity.Objects;
@@ -70,33 +71,41 @@ namespace Desonity
             }
         }
 
-        public static async Task<Response> uploadImage(Identity identity, byte[] imageBytes){
+        public static async Task<Response> uploadImage(Identity identity, byte[] imageBytes)
+        {
             string endpoint = "/upload-image";
-            WWWForm form = new WWWForm();
-            form.AddBinaryData("file", imageBytes, "image.png");
-            form.AddField("UserPublicKeyBase58Check", identity.getDerivedPublicKey());
-            form.AddField("JWT", identity.getDerivedJwt());
+            List<IMultipartFormSection> postData = new List<IMultipartFormSection>();
+            postData.Add(new MultipartFormDataSection("UserPublicKeyBase58Check", identity.getPublicKey()));
+            postData.Add(new MultipartFormDataSection("JWT", identity.getJwt()));
+            postData.Add(new MultipartFormFileSection("file", imageBytes, "image.png", "image/png"));
+            /* WWWForm form = new WWWForm(); */
+            /* form.AddBinaryData("file", imageBytes, "image.png", "image/png"); */
+            /* form.AddField("UserPublicKeyBase58Check", identity.getPublicKey()); */
+            /* form.AddField("JWT", identity.getJwt()); */
 
-            UnityWebRequest www = UnityWebRequest.Post(Route.getRoute() + endpoint, form);
-            await www.SendWebRequest();
+            using (UnityWebRequest www = UnityWebRequest.Post(Route.getRoute() + endpoint, postData))
+            {
+                await www.SendWebRequest();
 
-            if(www.result == UnityWebRequest.Result.ConnectionError){
-                throw new Exception(www.error);
-            }
-            else{
-                Response uploadResponse = new Response{
-                    json = JObject.Parse(www.downloadHandler.text),
-                    statusCode = www.responseCode,
-                };
-                if(www.downloadHandler.text.Contains("error")){
-                    throw new Exception(uploadResponse.json["error"].ToString());
-                }else{
-                    uploadResponse.data = (string)uploadResponse.json["ImageURL"];
+                if (www.result == UnityWebRequest.Result.ConnectionError)
+                {
+                    throw new Exception(www.error);
                 }
-                return uploadResponse;
-                
+                else
+                {
+                    Debug.Log(www.downloadHandler.text);
+                    Response uploadResponse = new Response
+                    {
+                        json = JObject.Parse(www.downloadHandler.text),
+                        statusCode = www.responseCode,
+                    };
+                    if (www.downloadHandler.text.Contains("ImageURL"))
+                    {
+                        uploadResponse.data = (string)uploadResponse.json["ImageURL"];
+                    }
+                    return uploadResponse;
+                }
             }
-
         }
     }
 }

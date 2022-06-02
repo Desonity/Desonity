@@ -26,7 +26,7 @@ namespace Desonity
         private string scope = null;
         private string DerivedPublicKey = null;
         private string DerivedSeedHex = null;
-        private string DerivedJWT = null;
+        private string JWT = null;
 
         public Identity() { }
 
@@ -75,7 +75,8 @@ namespace Desonity
             return null;
         }
 
-        public string getDerivedPublicKey(){
+        public string getDerivedPublicKey()
+        {
             if (this.DerivedPublicKey != null)
             {
                 return this.DerivedPublicKey;
@@ -84,11 +85,11 @@ namespace Desonity
             return null;
         }
 
-        public string getDerivedJwt()
+        public string getJwt()
         {
             if (this.scope == IdentityScopes.READ_WRITE_DERIVED)
             {
-                return this.DerivedJWT;
+                return this.JWT;
             }
             else
             {
@@ -188,7 +189,7 @@ namespace Desonity
                 {
                     this.DerivedPublicKey = (string)response.json["derivedKey"];
                     this.DerivedSeedHex = (string)response.json["derivedSeed"];
-                    this.DerivedJWT = (string)response.json["derivedJwt"];
+                    this.JWT = (string)response.json["jwt"];
                     this.scope = IdentityScopes.READ_WRITE_DERIVED;
                 }
 
@@ -260,7 +261,7 @@ namespace Desonity
                 // encrypt the derived seed, derived key
                 PlayerPrefs.SetString("DerivedPublicKey", Encryption.Encrypt(this.DerivedPublicKey));
                 PlayerPrefs.SetString("DerivedSeedHex", Encryption.Encrypt(this.DerivedSeedHex));
-                PlayerPrefs.SetString("DerivedJWT", Encryption.Encrypt(this.DerivedJWT));
+                PlayerPrefs.SetString("JWT", Encryption.Encrypt(this.JWT));
             }
             else if (this.scope != IdentityScopes.READ_ONLY)
             {
@@ -271,32 +272,36 @@ namespace Desonity
 
         public void loadKeys()
         {
-            this.scope = Encryption.Decrypt(PlayerPrefs.GetString("scope"));
-            this.PublicKeyBase58Check = Encryption.Decrypt(PlayerPrefs.GetString("publicKey"));
-            if (scope == IdentityScopes.READ_WRITE_LOCAL_SEED)
+            if (PlayerPrefs.HasKey("publicKey") && PlayerPrefs.HasKey("scope"))
             {
-                this.seedHex = Encryption.Decrypt(PlayerPrefs.GetString("seedHex"));
-            }
-            else if (scope == IdentityScopes.READ_WRITE_DERIVED)
-            {
-                this.DerivedSeedHex = Encryption.Decrypt(PlayerPrefs.GetString("DerivedSeedHex"));
-                this.DerivedPublicKey = Encryption.Decrypt(PlayerPrefs.GetString("DerivedPublicKey"));
-                this.DerivedJWT = Encryption.Decrypt(PlayerPrefs.GetString("DerivedJWT"));
-            }
-            else if (scope != IdentityScopes.READ_ONLY)
-            {
-                throw new Exception("Unknown Identity scope");
+                this.scope = Encryption.Decrypt(PlayerPrefs.GetString("scope"));
+                this.PublicKeyBase58Check = Encryption.Decrypt(PlayerPrefs.GetString("publicKey"));
+                if (scope == IdentityScopes.READ_WRITE_LOCAL_SEED)
+                {
+                    this.seedHex = Encryption.Decrypt(PlayerPrefs.GetString("seedHex"));
+                }
+                else if (scope == IdentityScopes.READ_WRITE_DERIVED)
+                {
+                    this.DerivedSeedHex = Encryption.Decrypt(PlayerPrefs.GetString("DerivedSeedHex"));
+                    this.DerivedPublicKey = Encryption.Decrypt(PlayerPrefs.GetString("DerivedPublicKey"));
+                    this.JWT = Encryption.Decrypt(PlayerPrefs.GetString("JWT"));
+                }
+                else if (scope != IdentityScopes.READ_ONLY)
+                {
+                    throw new Exception("Unknown Identity scope");
+                }
             }
         }
 
-        public void logout(){
+        public void logout()
+        {
             PlayerPrefs.DeleteAll();
             this.scope = null;
             this.PublicKeyBase58Check = null;
             this.seedHex = null;
             this.DerivedSeedHex = null;
             this.DerivedPublicKey = null;
-            this.DerivedJWT = null;
+            this.JWT = null;
         }
     }
 }

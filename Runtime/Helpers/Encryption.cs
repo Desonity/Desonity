@@ -15,8 +15,8 @@ namespace Desonity
 
         public static void setKEYAndIV(string key32, string iv16)
         {
-            if (KEY32.Length != 32) { throw new Exception("KEY must be 32 characters long"); }
-            if (IV16.Length != 16) { throw new Exception("IV must be 16 characters long"); }
+            if (key32.Length != 32) { throw new Exception("KEY must be 32 characters long"); }
+            if (iv16.Length != 16) { throw new Exception("IV must be 16 characters long"); }
             KEY32 = key32;
             IV16 = iv16;
         }
@@ -44,7 +44,7 @@ namespace Desonity
             aes.Key = Encoding.UTF8.GetBytes(KEY32);
             aes.IV = Encoding.UTF8.GetBytes(IV16);
 
-            byte[] dataDec = aes.CreateDecryptor().TransformFinalBlock(Convert.FromBase64String(data), 0, data.Length);
+            byte[] dataDec = aes.CreateDecryptor().TransformFinalBlock(Convert.FromBase64String(data), 0, Convert.FromBase64String(data).Length);
             return ASCIIEncoding.ASCII.GetString(dataDec);
         }
     }

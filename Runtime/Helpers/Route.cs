@@ -27,7 +27,8 @@ namespace Desonity
     }
     public static class Route
     {
-        public static string ROUTE = "https://api.desodev.com/api/v0";
+        /* public static string ROUTE = "https://api.desodev.com/api/v0"; */
+        public static string ROUTE = "https://node.deso.org/api/v0";
         public static string getRoute()
         {
             return ROUTE;
