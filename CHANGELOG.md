@@ -2,6 +2,21 @@
 
 All notable changes for Desonity package will be documented in this file.
 
+## [v0.1.0](https://github.com/desonity/desonity/releases/tag/v0.1.0) - 2022-06-02
+
+### Added
+- Image upload
+- Saving/Loading login public key, derived keys and jwt tokens from local storage (Unity PlayerPrefs). Everything is encrypted and stored.
+- Buying/Selling creator coins
+- Basic transfer of $deso
+- Get holders of cc/dao coins of a user
+- Is holding cc/dao of a user
+
+### Changed
+- default node to node.deso.org
+- Functions that require signing and submitting of transactions will not approve transactions by themselves. The user has to call a `.approveTxn()` method returned in the response object to spprove the transaction.
+
+
 ## [v0.0.7](https://github.com/desonity/desonity/releases/tag/v0.0.7) - 2022-05-18
 
 ### Added
