@@ -270,7 +270,7 @@ namespace Desonity
             PlayerPrefs.Save();
         }
 
-        public void loadKeys()
+        public bool loadKeys()
         {
             if (PlayerPrefs.HasKey("publicKey") && PlayerPrefs.HasKey("scope"))
             {
@@ -290,6 +290,11 @@ namespace Desonity
                 {
                     throw new Exception("Unknown Identity scope");
                 }
+                return true;
+            }
+            else
+            {
+                return false;
             }
         }
 
