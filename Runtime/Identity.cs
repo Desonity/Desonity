@@ -157,7 +157,7 @@ namespace Desonity
             }
         }
 
-        public async Task Login(bool derive = false)
+        public async Task<bool> Login(bool derive = false)
         {
 
             if (this.backendURL == null)
@@ -192,6 +192,7 @@ namespace Desonity
                     this.JWT = (string)response.json["jwt"];
                     this.scope = IdentityScopes.READ_WRITE_DERIVED;
                 }
+                return true;
 
             }
             else
