@@ -19,11 +19,12 @@ namespace Desonity.Endpoints
         {
             public string Body;
             public List<string> ImageURLs;
-            public JObject PostExtraData;
-
         }
 
+        public string PostHashHexToModify;
+        public string ParentStakeID;
         public string UpdaterPublicKeyBase58Check;
+        public JObject PostExtraData;
         public bool IsHidden = false;
         public int MinFeeRateNanosPerKB = 1000;
         public PostBody BodyObj;
