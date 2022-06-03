@@ -19,7 +19,7 @@ namespace Desonity.Endpoints
         public string Username;
         public bool GetEntriesFollowingUsername; // True -> get followers, False -> get following
         public string LastPublicKeyBase58Check;
-        public uint NumToFetch;
+        public uint NumToFetch = 100;
     }
 
     [Serializable]
