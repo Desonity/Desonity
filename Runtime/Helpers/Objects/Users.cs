@@ -44,6 +44,14 @@ namespace Desonity.Objects
     }
 
     [Serializable]
+    public class GetFollowsResponse
+    {
+        public JObject json;
+        public int NumFollowers;
+        public Dictionary<string, ProfileEntry> PublicKeyToProfileEntry;
+    }
+
+    [Serializable]
     public class BalanceEntry
     {
         public string MODlerPublicKeyBase58Check;

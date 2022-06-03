@@ -14,6 +14,15 @@ namespace Desonity.Endpoints
     }
 
     [Serializable]
+    public class GetFollowsStateless{
+        public string PublicKeyBase58Check;
+        public string Username;
+        public bool GetEntriesFollowingUsername; // True -> get followers, False -> get following
+        public string LastPublicKeyBase58Check;
+        public uint NumToFetch;
+    }
+
+    [Serializable]
     public class GetHodlersForPublicKey
     {
         public string PublicKeyBase58Check;

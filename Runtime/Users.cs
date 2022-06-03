@@ -31,6 +31,25 @@ namespace Desonity
 
         }
 
+        public static async Task<GetFollowsResponse> getFollowsStateless(GetFollowsStateless getFollowsStateless){
+            string endpoint = "/get-follows-stateless";
+            string postData = JsonConvert.SerializeObject(getFollowsStateless);
+
+            Response response = await Route.POST(endpoint, postData);
+
+            if (response.statusCode == 200)
+            {
+                GetFollowsResponse followsResponse = JsonConvert.DeserializeObject<GetFollowsResponse>(response.json.ToString());
+                followsResponse.json = (JObject)response.json;
+                return followsResponse;
+            }
+            else
+            {
+                throw new Exception("Error while getting follows stateless: " + response.json);
+            }
+
+        }
+
         public static async Task<GetHodlersResponse> getHodlersForPublicKey(GetHodlersForPublicKey getHodlers)
         {
             string endpoint = "/get-hodlers-for-public-key";
